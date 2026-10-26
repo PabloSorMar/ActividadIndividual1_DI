@@ -1,0 +1,33 @@
+<div
+  class="stat-card"
+  [class.clickable]="clickable"
+  [class]="'color-' + color"
+  (click)="onCardClicked()"
+  (keydown)="onKeydown($event)"
+  [attr.tabindex]="clickable ? 0 : null"
+  [attr.role]="clickable ? 'button' : 'region'"
+  [attr.aria-label]="title + ': ' + (prefix || '') + value + (suffix || '')"
+>
+  <div class="stat-header">
+    <span class="stat-title">{{ title }}</span>
+    <div class="icon-bubble" [attr.aria-hidden]="true">
+      <ion-icon [name]="icon"></ion-icon>
+    </div>
+  </div>
+
+  <div class="stat-body">
+    <div class="stat-value">
+      <span *ngIf="prefix" class="prefix">{{ prefix }}</span>
+      <span class="number">{{ value }}</span>
+      <span *ngIf="suffix" class="suffix">{{ suffix }}</span>
+    </div>
+
+    <div *ngIf="trend !== undefined" class="trend-row" [class.positive]="trend >= 0" [class.negative]="trend < 0">
+      <ion-icon [name]="trend >= 0 ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline'"></ion-icon>
+      <span class="trend-value">{{ trend >= 0 ? '+' : '' }}{{ trend }}%</span>
+      <span class="trend-label">{{ trendLabel }}</span>
+    </div>
+
+    <p *ngIf="description" class="stat-desc">{{ description }}</p>
+  </div>
+</div>

@@ -1,0 +1,116 @@
+.help-content {
+  --background: var(--ion-background-color, #f8fafc);
+}
+
+.welcome-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.12), rgba(var(--ion-color-secondary-rgb, 61, 194, 255), 0.08));
+  border: 1px solid rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.2);
+  border-radius: 14px;
+  padding: 1.15rem;
+  margin-bottom: 1.5rem;
+
+  .icon-wrap {
+    font-size: 2.2rem;
+    color: var(--ion-color-primary, #3880ff);
+  }
+
+  h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--ion-color-step-600, #555);
+  }
+}
+
+.credentials-card {
+  background: var(--ion-card-background, #ffffff);
+  border-radius: 14px;
+  border: 1px solid rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.08);
+  padding: 1.15rem;
+  margin-bottom: 1.5rem;
+
+  h3 {
+    margin: 0 0 0.85rem;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .cred-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .cred-item {
+    padding: 0.9rem;
+    border-radius: 10px;
+    background: rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.03);
+    border-left: 4px solid var(--ion-color-primary);
+
+    &.admin {
+      border-left-color: var(--ion-color-danger, #eb445a);
+    }
+
+    &.user {
+      border-left-color: var(--ion-color-primary, #3880ff);
+    }
+
+    p {
+      margin: 0.4rem 0 0.2rem;
+      font-size: 0.85rem;
+    }
+
+    small {
+      display: block;
+      color: var(--ion-color-step-500, #777);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+  }
+}
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+}
+
+ion-accordion {
+  margin-bottom: 0.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.06);
+
+  .accordion-body {
+    background: var(--ion-card-background, #ffffff);
+    font-size: 0.88rem;
+    line-height: 1.5;
+
+    ul {
+      padding-left: 1.25rem;
+      margin: 0.5rem 0 0;
+
+      li {
+        margin-bottom: 0.4rem;
+      }
+    }
+
+    kbd {
+      background: #e2e8f0;
+      color: #1e293b;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-family: monospace;
+      border: 1px solid #cbd5e1;
+    }
+  }
+}

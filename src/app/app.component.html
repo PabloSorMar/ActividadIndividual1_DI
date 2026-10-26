@@ -1,3 +1,135 @@
 <ion-app>
-  <ion-router-outlet></ion-router-outlet>
+  <ion-split-pane contentId="main-content" [when]="authService.isAuthenticated() ? 'lg' : 'false'">
+    <!-- Menú Lateral Global (Side Menu) -->
+    <ion-menu contentId="main-content" type="overlay" [disabled]="!authService.isAuthenticated()">
+      <ion-header class="ion-no-border">
+        <ion-toolbar color="primary">
+          <div class="menu-brand">
+            <div class="menu-brand-icon" aria-hidden="true">
+              <ion-icon name="business-outline"></ion-icon>
+            </div>
+            <div>
+              <ion-title class="brand-text">NovaGestión</ion-title>
+              <span class="sub-text">PWA Multiplataforma</span>
+            </div>
+          </div>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="menu-content">
+        <!-- Tarjeta de Perfil del Usuario Activo -->
+        <div *ngIf="authService.currentUser$ | async as user" class="user-profile-banner">
+          <ion-avatar class="user-avatar">
+            <img [src]="user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'" alt="Avatar del usuario" />
+          </ion-avatar>
+          <div class="user-info">
+            <h4 class="user-name">{{ user.name }}</h4>
+            <span class="user-email">{{ user.email }}</span>
+            <div class="role-tag-box">
+              <ion-badge [color]="user.role === 'admin' ? 'danger' : 'primary'">
+                {{ user.role === 'admin' ? 'Administrador' : 'Usuario Estándar' }}
+              </ion-badge>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Navegación según Rol -->
+        <ion-list lines="none" class="nav-list">
+          <!-- Rutas de Administrador -->
+          <ng-container *ngIf="authService.hasRole('admin')">
+            <div class="list-section-header">
+              <span>ADMINISTRACIÓN</span>
+            </div>
+
+            <ion-menu-toggle auto-hide="false">
+              <ion-item routerLink="/admin-dashboard" routerDirection="root" routerLinkActive="selected" class="nav-item">
+                <ion-icon slot="start" name="stats-chart-outline"></ion-icon>
+                <ion-label>Cuadro de Mando</ion-label>
+              </ion-item>
+            </ion-menu-toggle>
+
+            <ion-menu-toggle auto-hide="false">
+              <ion-item routerLink="/management" routerDirection="root" routerLinkActive="selected" class="nav-item">
+                <ion-icon slot="start" name="folder-open-outline"></ion-icon>
+                <ion-label>Gestión de Entidades (SQL)</ion-label>
+              </ion-item>
+            </ion-menu-toggle>
+          </ng-container>
+
+          <!-- Rutas Comunes / Usuario Estándar -->
+          <div class="list-section-header">
+            <span>MI ÁREA</span>
+          </div>
+
+          <ion-menu-toggle auto-hide="false">
+            <ion-item routerLink="/user-dashboard" routerDirection="root" routerLinkActive="selected" class="nav-item">
+              <ion-icon slot="start" name="person-outline"></ion-icon>
+              <ion-label>Portal de Usuario</ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+
+          <div class="list-section-header">
+            <span>SISTEMA Y SOPORTE</span>
+          </div>
+
+          <!-- Botón de Ayuda Contextual / Manual Integrado -->
+          <ion-item (click)="openHelp()" button class="nav-item">
+            <ion-icon slot="start" name="help-buoy-outline" color="secondary"></ion-icon>
+            <ion-label>Manual de Usuario (RA 6)</ion-label>
+            <ion-badge slot="end" color="secondary">Guía</ion-badge>
+          </ion-item>
+
+          <!-- Selector de Modo Oscuro / Claro -->
+          <ion-item (click)="toggleTheme()" button class="nav-item">
+            <ion-icon slot="start" [name]="isDarkMode ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+            <ion-label>{{ isDarkMode ? 'Tema Claro' : 'Tema Oscuro' }}</ion-label>
+          </ion-item>
+        </ion-list>
+      </ion-content>
+
+      <!-- Pie del Menú con Cerrar Sesión -->
+      <ion-footer class="ion-no-border menu-footer">
+        <ion-toolbar>
+          <ion-button expand="block" fill="outline" color="danger" (click)="logout()" class="logout-btn">
+            <ion-icon slot="start" name="log-out-outline"></ion-icon>
+            Cerrar Sesión
+          </ion-button>
+        </ion-toolbar>
+      </ion-footer>
+    </ion-menu>
+
+    <!-- Área de Contenido Principal -->
+    <div class="ion-page" id="main-content">
+      <!-- Barra Superior Universal cuando hay sesión activa -->
+      <ion-header *ngIf="authService.isAuthenticated$ | async" class="global-top-header">
+        <ion-toolbar>
+          <ion-buttons slot="start">
+            <ion-menu-button aria-label="Abrir menú lateral de navegación"></ion-menu-button>
+          </ion-buttons>
+
+          <ion-title class="app-top-title">NovaGestión</ion-title>
+
+          <ion-buttons slot="end">
+            <!-- Botón de Ayuda Rápida -->
+            <ion-button (click)="openHelp()" aria-label="Abrir manual de usuario">
+              <ion-icon slot="icon-only" name="help-circle-outline"></ion-icon>
+            </ion-button>
+
+            <!-- Botón Cambio de Tema -->
+            <ion-button (click)="toggleTheme()" aria-label="Cambiar tema visual">
+              <ion-icon slot="icon-only" [name]="isDarkMode ? 'sunny-outline' : 'moon-outline'"></ion-icon>
+            </ion-button>
+
+            <!-- Botón de Salir -->
+            <ion-button (click)="logout()" aria-label="Cerrar sesión actual">
+              <ion-icon slot="icon-only" name="power-outline" color="danger"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <!-- Router Outlet Principal con Carga Diferida -->
+      <ion-router-outlet id="main-content"></ion-router-outlet>
+    </div>
+  </ion-split-pane>
 </ion-app>

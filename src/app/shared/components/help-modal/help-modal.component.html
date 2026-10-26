@@ -1,0 +1,133 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar color="primary">
+    <ion-title>Manual de Usuario y Soporte</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="dismiss()" aria-label="Cerrar manual de ayuda">
+        <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding help-content">
+  <!-- Banner de Bienvenida -->
+  <div class="welcome-box">
+    <div class="icon-wrap">
+      <ion-icon name="information-circle"></ion-icon>
+    </div>
+    <div>
+      <h2>Guía del Sistema NovaGestión</h2>
+      <p>Bienvenido al Sistema de Gestión Multiplataforma para el módulo de Desarrollo de Interfaces (DAM).</p>
+    </div>
+  </div>
+
+  <!-- Credenciales de Prueba Rápidas -->
+  <div class="credentials-card">
+    <h3>🔑 Credenciales de Acceso para Pruebas (Evaluación)</h3>
+    <div class="cred-grid">
+      <div class="cred-item admin">
+        <ion-badge color="danger">Rol Administrador</ion-badge>
+        <p><strong>Email:</strong> admin&#64;empresa.com</p>
+        <p><strong>Contraseña:</strong> admin123 (o 1234)</p>
+        <small>Acceso a Cuadro de Mando, Gestión de Facturas/Clientes, Métricas y Exportación.</small>
+      </div>
+
+      <div class="cred-item user">
+        <ion-badge color="primary">Rol Usuario Estándar</ion-badge>
+        <p><strong>Email:</strong> user&#64;empresa.com</p>
+        <p><strong>Contraseña:</strong> user123 (o 1234)</p>
+        <small>Acceso a Mis Gestiones, Solicitudes personales y perfil restringido.</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acordeón de Secciones del Manual -->
+  <h3 class="section-title">Guía de Uso Paso a Paso</h3>
+  <ion-accordion-group [multiple]="true" [value]="['sec-1', 'sec-2']">
+    <!-- Sección 1: Enrutamiento y Roles -->
+    <ion-accordion value="sec-1">
+      <ion-item slot="header" color="light">
+        <ion-icon slot="start" name="shield-checkmark-outline" color="primary"></ion-icon>
+        <ion-label><strong>1. Control de Acceso y Rutas Protegidas (Guards)</strong></ion-label>
+      </ion-item>
+      <div class="ion-padding accordion-body" slot="content">
+        <p>La aplicación utiliza <code>CanActivateFn</code> con control estricto de roles:</p>
+        <ul>
+          <li><strong>Si no has iniciado sesión:</strong> Cualquier ruta protegida te redirigirá a <code>/login</code> recordando la URL de origen.</li>
+          <li><strong>Si inicias como Usuario Estándar:</strong> No podrás acceder a <code>/admin-dashboard</code> ni a <code>/management</code>. El Guard redirigirá a una pantalla de acceso denegado informativa.</li>
+          <li><strong>Si inicias como Administrador:</strong> Dispones de acceso irrestricto a todas las funcionalidades.</li>
+        </ul>
+      </div>
+    </ion-accordion>
+
+    <!-- Sección 2: Formularios y Validaciones Asíncronas -->
+    <ion-accordion value="sec-2">
+      <ion-item slot="header" color="light">
+        <ion-icon slot="start" name="document-text-outline" color="secondary"></ion-icon>
+        <ion-label><strong>2. Formularios Reactivos y Validación Asíncrona</strong></ion-label>
+      </ion-item>
+      <div class="ion-padding accordion-body" slot="content">
+        <p>En el registro (<code>/register</code>):</p>
+        <ul>
+          <li><strong>Validación Asíncrona de Correo:</strong> Al introducir un email, se realiza una comprobación contra el servicio con un retardo simulado de 500ms. Si introduces <code>admin&#64;empresa.com</code> verás cómo se marca en rojo indicando que ya está registrado.</li>
+          <li><strong>Validación de DNI/CIF:</strong> Se comprueba el formato legal español y su disponibilidad única.</li>
+        </ul>
+      </div>
+    </ion-accordion>
+
+    <!-- Sección 3: Consumo Dual SQL y NoSQL -->
+    <ion-accordion value="sec-3">
+      <ion-item slot="header" color="light">
+        <ion-icon slot="start" name="server-outline" color="tertiary"></ion-icon>
+        <ion-label><strong>3. Consumo Dual de Datos (SQL y NoSQL)</strong></ion-label>
+      </ion-item>
+      <div class="ion-padding accordion-body" slot="content">
+        <p>El sistema implementa dos orígenes de persistencia concurrentes:</p>
+        <ul>
+          <li><strong>Fuente Relacional (SQL):</strong> Modela clientes y facturas relacionadas con claves foráneas, con operaciones CRUD asíncronas con Observables RxJS.</li>
+          <li><strong>Fuente Documental en Tiempo Real (NoSQL):</strong> Emite flujos reactivos periódicos de auditoría y notificaciones sin recargar la página.</li>
+          <li><strong>Orquestación:</strong> En el Cuadro de Mando se orquestan ambas fuentes mediante <code>forkJoin</code> garantizando una carga atómica.</li>
+        </ul>
+      </div>
+    </ion-accordion>
+
+    <!-- Sección 4: Dashboard y Exportación -->
+    <ion-accordion value="sec-4">
+      <ion-item slot="header" color="light">
+        <ion-icon slot="start" name="pie-chart-outline" color="success"></ion-icon>
+        <ion-label><strong>4. Cuadro de Mando y Exportación (PDF y CSV)</strong></ion-label>
+      </ion-item>
+      <div class="ion-padding accordion-body" slot="content">
+        <p>En la vista de Administrador:</p>
+        <ul>
+          <li><strong>Gráficos Interactivos:</strong> Visualización mensual de ingresos y distribución de facturas por estado con Chart.js.</li>
+          <li><strong>Filtros en Vivo:</strong> Puedes filtrar por rango de tiempo (Hoy, Semana, Mes, Año) y la tabla y gráficos responderán al instante.</li>
+          <li><strong>Exportación CSV:</strong> Pulsa el botón "Exportar CSV" para descargar una hoja de cálculo con codificación UTF-8.</li>
+          <li><strong>Exportación PDF:</strong> Pulsa el botón "Exportar PDF" para descargar un informe corporativo con cabecera y tabla formateada usando jsPDF.</li>
+        </ul>
+      </div>
+    </ion-accordion>
+
+    <!-- Sección 5: Accesibilidad y Atajos -->
+    <ion-accordion value="sec-5">
+      <ion-item slot="header" color="light">
+        <ion-icon slot="start" name="accessibility-outline" color="warning"></ion-icon>
+        <ion-label><strong>5. Accesibilidad WCAG y Navegación por Teclado</strong></ion-label>
+      </ion-item>
+      <div class="ion-padding accordion-body" slot="content">
+        <p>Diseñado para cumplir con el nivel AA/AAA de WCAG 2.1:</p>
+        <ul>
+          <li><kbd>Tab</kbd> / <kbd>Shift + Tab</kbd>: Navegar secuencialmente entre tarjetas, campos y filas.</li>
+          <li><kbd>Enter</kbd> / <kbd>Espacio</kbd>: Activar botones, ordenar columnas o abrir registros.</li>
+          <li>Etiquetas semánticas <code>aria-label</code>, <code>aria-sort</code> y roles WAI-ARIA integrados.</li>
+        </ul>
+      </div>
+    </ion-accordion>
+  </ion-accordion-group>
+
+  <div class="modal-footer ion-text-center ion-margin-top">
+    <ion-button expand="block" fill="solid" color="primary" (click)="dismiss()">
+      Entendido, volver a la aplicación
+    </ion-button>
+  </div>
+</ion-content>

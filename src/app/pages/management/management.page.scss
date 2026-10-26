@@ -1,0 +1,72 @@
+.management-content {
+  --background: var(--ion-background-color, #f8fafc);
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.08);
+
+  .header-titles {
+    ion-badge {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      margin-bottom: 0.35rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--ion-text-color, #0f172a);
+    }
+
+    p {
+      margin: 0.25rem 0 0;
+      font-size: 0.88rem;
+      color: var(--ion-color-step-500, #64748b);
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+
+    .custom-segment {
+      width: auto;
+      --background: rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.05);
+
+      ion-segment-button {
+        --indicator-color: var(--ion-color-primary, #3880ff);
+        --color-checked: #ffffff;
+        min-height: 38px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+    }
+
+    ion-button {
+      --border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      height: 38px;
+    }
+  }
+}
+
+.modal-form-content {
+  .modal-input-item {
+    --background: rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.04);
+    border: 1px solid rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.12);
+    border-radius: 10px;
+    margin-bottom: 0.85rem;
+  }
+}

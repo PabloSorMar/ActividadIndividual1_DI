@@ -1,15 +1,125 @@
-<ion-content class="ion-padding">
-  <div style="max-width: 400px; margin: 80px auto;">
-    <h2>Iniciar Sesión - Proyecto DAM</h2>
-    
-    <ion-item>
-      <ion-input label="Correo electrónico" labelPlacement="stacked" [(ngModel)]="email" type="email" placeholder="admin@empresa.com"></ion-input>
-    </ion-item>
+<ion-content class="login-content ion-padding">
+  <div class="login-container">
+    <!-- Logotipo y Encabezado de Marca -->
+    <div class="brand-header">
+      <div class="brand-logo" aria-hidden="true">
+        <ion-icon name="business-outline"></ion-icon>
+      </div>
+      <h1 class="brand-title">NovaGestión</h1>
+      <p class="brand-subtitle">Sistema Empresarial Multiplataforma (PWA)</p>
+    </div>
 
-    <ion-item>
-      <ion-input label="Contraseña" labelPlacement="stacked" [(ngModel)]="password" type="password" placeholder="1234"></ion-input>
-    </ion-item>
+    <!-- Tarjeta Principal de Login -->
+    <ion-card class="login-card">
+      <ion-card-content>
+        <h2>Iniciar Sesión</h2>
+        <p class="form-instructions">Introduce tus credenciales corporativas para acceder al sistema.</p>
 
-    <ion-button expand="block" class="ion-margin-top" (click)="onLogin()">Entrar</ion-button>
+        <!-- Mensaje de Error Accesible -->
+        <div *ngIf="errorMessage" class="error-banner" role="alert" aria-live="assertive">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+          <!-- Campo Email -->
+          <div class="form-group" [class.has-error]="isFieldInvalid('email')">
+            <ion-item lines="none" class="custom-input-item">
+              <ion-icon name="mail-outline" slot="start" aria-hidden="true"></ion-icon>
+              <ion-input
+                label="Correo Electrónico"
+                labelPlacement="floating"
+                type="email"
+                formControlName="email"
+                placeholder="ejemplo@empresa.com"
+                autocomplete="email"
+                aria-required="true"
+                [attr.aria-invalid]="isFieldInvalid('email')"
+              ></ion-input>
+            </ion-item>
+            <div *ngIf="isFieldInvalid('email')" class="field-error-text" role="alert">
+              <span *ngIf="loginForm.get('email')?.errors?.['required']">El correo es obligatorio.</span>
+              <span *ngIf="loginForm.get('email')?.errors?.['email']">Introduce un formato de email válido.</span>
+            </div>
+          </div>
+
+          <!-- Campo Contraseña -->
+          <div class="form-group" [class.has-error]="isFieldInvalid('password')">
+            <ion-item lines="none" class="custom-input-item">
+              <ion-icon name="lock-closed-outline" slot="start" aria-hidden="true"></ion-icon>
+              <ion-input
+                label="Contraseña"
+                labelPlacement="floating"
+                type="password"
+                formControlName="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                aria-required="true"
+                [attr.aria-invalid]="isFieldInvalid('password')"
+              ></ion-input>
+            </ion-item>
+            <div *ngIf="isFieldInvalid('password')" class="field-error-text" role="alert">
+              <span *ngIf="loginForm.get('password')?.errors?.['required']">La contraseña es obligatoria.</span>
+              <span *ngIf="loginForm.get('password')?.errors?.['minlength']">Mínimo 4 caracteres requeridos.</span>
+            </div>
+          </div>
+
+          <!-- Recordar Sesión -->
+          <div class="remember-row">
+            <ion-checkbox formControlName="rememberMe" labelPlacement="end">
+              Mantener sesión iniciada
+            </ion-checkbox>
+          </div>
+
+          <!-- Botón de Envío -->
+          <ion-button
+            type="submit"
+            expand="block"
+            size="large"
+            color="primary"
+            class="submit-button"
+            [disabled]="isSubmitting"
+          >
+            <ion-spinner *ngIf="isSubmitting" name="crescent" slot="start"></ion-spinner>
+            <span *ngIf="!isSubmitting">Acceder al Sistema</span>
+            <span *ngIf="isSubmitting">Autenticando...</span>
+          </ion-button>
+        </form>
+
+        <!-- Botones de Acceso Rápido para Pruebas (Evaluación Docente) -->
+        <div class="quick-access-box">
+          <p class="quick-title">⚡ Acceso Rápido de Prueba (Evaluación):</p>
+          <div class="quick-buttons">
+            <ion-button
+              fill="outline"
+              size="small"
+              color="danger"
+              (click)="fillCredentials('admin')"
+              aria-label="Cargar credenciales de Administrador"
+            >
+              <ion-icon slot="start" name="shield-outline"></ion-icon>
+              Demo Administrador
+            </ion-button>
+
+            <ion-button
+              fill="outline"
+              size="small"
+              color="primary"
+              (click)="fillCredentials('user')"
+              aria-label="Cargar credenciales de Usuario Estándar"
+            >
+              <ion-icon slot="start" name="person-outline"></ion-icon>
+              Demo Usuario
+            </ion-button>
+          </div>
+        </div>
+
+        <!-- Enlace a Registro (Fase 1 - Paso 1.2) -->
+        <div class="register-prompt">
+          <span>¿No dispones de cuenta? </span>
+          <a routerLink="/register" class="register-link">Crear nuevo registro</a>
+        </div>
+      </ion-card-content>
+    </ion-card>
   </div>
 </ion-content>

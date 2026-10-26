@@ -1,0 +1,40 @@
+<ion-content class="unauth-content ion-padding">
+  <div class="unauth-container">
+    <div class="unauth-card">
+      <div class="shield-icon" aria-hidden="true">
+        <ion-icon name="shield-half-outline"></ion-icon>
+      </div>
+
+      <ion-badge color="danger">Acceso Denegado por Rol (Guard)</ion-badge>
+      <h1>Privilegios Insuficientes</h1>
+
+      <p class="description">
+        Has intentado acceder a una vista protegida que requiere permisos de
+        <strong>{{ requiredRole === 'admin' ? 'Administrador' : requiredRole }}</strong>.
+      </p>
+
+      <div class="role-comparison-box">
+        <div class="role-stat">
+          <span class="label">Tu Rol Actual:</span>
+          <ion-badge color="primary">{{ currentRole.toUpperCase() }}</ion-badge>
+        </div>
+        <div class="role-stat">
+          <span class="label">Rol Exigido:</span>
+          <ion-badge color="danger">{{ requiredRole.toUpperCase() }}</ion-badge>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <ion-button expand="block" color="primary" (click)="goBack()">
+          <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
+          Volver a Mi Portal
+        </ion-button>
+
+        <ion-button expand="block" fill="outline" color="medium" (click)="reloginAsAdmin()">
+          <ion-icon slot="start" name="log-in-outline"></ion-icon>
+          Iniciar como Administrador
+        </ion-button>
+      </div>
+    </div>
+  </div>
+</ion-content>

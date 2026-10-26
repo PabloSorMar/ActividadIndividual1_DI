@@ -1,0 +1,177 @@
+<div class="data-table-wrapper" role="region" [attr.aria-label]="title || 'Tabla de datos interactiva'">
+  <!-- Cabecera de la tabla con título y buscador -->
+  <div class="table-toolbar">
+    <div *ngIf="title" class="table-title">
+      <h3>{{ title }}</h3>
+      <span class="records-count">{{ filteredData.length }} registros</span>
+    </div>
+
+    <div class="search-box">
+      <ion-searchbar
+        [placeholder]="searchPlaceholder"
+        [value]="searchTerm"
+        (ionInput)="onSearchInput($event)"
+        [debounce]="250"
+        showClearButton="focus"
+        aria-label="Buscar en la tabla"
+      ></ion-searchbar>
+    </div>
+  </div>
+
+  <!-- Estado de Carga -->
+  <div *ngIf="loading" class="loading-state" role="status" aria-live="polite">
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+    <span>Cargando datos del servidor...</span>
+  </div>
+
+  <!-- Contenedor Responsive con Scroll Horizontal Suave -->
+  <div *ngIf="!loading" class="table-responsive">
+    <table class="custom-table" role="table">
+      <thead>
+        <tr role="row">
+          <th
+            *ngFor="let col of columns"
+            role="columnheader"
+            [class.sortable]="col.sortable"
+            [style.width]="col.width"
+            [style.text-align]="col.align || 'left'"
+            (click)="onSort(col)"
+            (keydown.enter)="onSort(col)"
+            (keydown.space)="onSort(col)"
+            [attr.tabindex]="col.sortable ? 0 : null"
+            [attr.aria-sort]="sortKey === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
+          >
+            <div class="header-cell" [style.justify-content]="col.align === 'center' ? 'center' : (col.align === 'right' ? 'flex-end' : 'flex-start')">
+              <span>{{ col.header }}</span>
+              <span *ngIf="col.sortable" class="sort-icon" aria-hidden="true">
+                <ion-icon
+                  [name]="sortKey === col.key ? (sortDirection === 'asc' ? 'chevron-up' : 'chevron-down') : 'swap-vertical-outline'"
+                  [class.active]="sortKey === col.key"
+                ></ion-icon>
+              </span>
+            </div>
+          </th>
+
+          <!-- Columna de Acciones si existen -->
+          <th *ngIf="actions.length > 0" role="columnheader" class="actions-header" style="text-align: right;">
+            Acciones
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr
+          *ngFor="let row of paginatedData"
+          role="row"
+          class="table-row"
+          (click)="onRowSelected(row)"
+          tabindex="0"
+          (keydown.enter)="onRowSelected(row)"
+        >
+          <td
+            *ngFor="let col of columns"
+            role="cell"
+            [style.text-align]="col.align || 'left'"
+            [attr.data-label]="col.header"
+          >
+            <!-- Render según tipo de columna -->
+            <ng-container [ngSwitch]="col.type">
+              <!-- Tipo Badge -->
+              <ng-container *ngSwitchCase="'badge'">
+                <ion-badge [color]="getBadgeColor(col, getCellValue(col, row))">
+                  {{ getCellValue(col, row) }}
+                </ion-badge>
+              </ng-container>
+
+              <!-- Tipo Moneda -->
+              <ng-container *ngSwitchCase="'currency'">
+                <span class="currency-value font-mono">
+                  {{ getCellValue(col, row) | currency:'EUR':'symbol':'1.2-2':'es' }}
+                </span>
+              </ng-container>
+
+              <!-- Tipo Fecha -->
+              <ng-container *ngSwitchCase="'date'">
+                <span class="date-value">
+                  {{ getCellValue(col, row) | date:'dd/MM/yyyy' }}
+                </span>
+              </ng-container>
+
+              <!-- Texto por defecto -->
+              <ng-container *ngSwitchDefault>
+                <span>{{ getCellValue(col, row) }}</span>
+              </ng-container>
+            </ng-container>
+          </td>
+
+          <!-- Botones de Acción -->
+          <td *ngIf="actions.length > 0" role="cell" class="actions-cell" style="text-align: right;">
+            <div class="actions-wrapper">
+              <ion-button
+                *ngFor="let act of actions"
+                fill="clear"
+                size="small"
+                [color]="act.color || 'primary'"
+                (click)="onAction(act.id, row, $event)"
+                [attr.aria-label]="act.label"
+              >
+                <ion-icon slot="icon-only" [name]="act.icon || 'ellipsis-horizontal'"></ion-icon>
+              </ion-button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Estado Vacío -->
+        <tr *ngIf="paginatedData.length === 0" class="empty-row">
+          <td [attr.colspan]="columns.length + (actions.length > 0 ? 1 : 0)" class="empty-cell">
+            <div class="empty-state">
+              <ion-icon name="file-tray-outline"></ion-icon>
+              <p>{{ emptyMessage }}</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación Accesible -->
+  <div *ngIf="!loading && totalPages > 1" class="pagination-bar" role="navigation" aria-label="Paginación de resultados">
+    <div class="page-info">
+      Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong>
+    </div>
+
+    <div class="pagination-controls">
+      <button
+        type="button"
+        class="page-btn"
+        [disabled]="currentPage === 1"
+        (click)="goToPage(currentPage - 1)"
+        aria-label="Página anterior"
+      >
+        <ion-icon name="chevron-back-outline"></ion-icon>
+      </button>
+
+      <button
+        *ngFor="let p of getPagesArray()"
+        type="button"
+        class="page-btn number"
+        [class.active]="p === currentPage"
+        (click)="goToPage(p)"
+        [attr.aria-label]="'Ir a la página ' + p"
+        [attr.aria-current]="p === currentPage ? 'page' : null"
+      >
+        {{ p }}
+      </button>
+
+      <button
+        type="button"
+        class="page-btn"
+        [disabled]="currentPage === totalPages"
+        (click)="goToPage(currentPage + 1)"
+        aria-label="Página siguiente"
+      >
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </button>
+    </div>
+  </div>
+</div>

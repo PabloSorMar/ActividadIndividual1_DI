@@ -1,2 +1,86 @@
-// For information on how to create your own theme, please refer to:
-// https://ionicframework.com/docs/theming/
+// Paleta de Colores Corporativa Accesible WCAG 2.1 AA/AAA
+:root {
+  /** Primary: Azul Eléctrico Corporativo **/
+  --ion-color-primary: #2563eb;
+  --ion-color-primary-rgb: 37, 99, 235;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #1d4ed8;
+  --ion-color-primary-tint: #3b82f6;
+
+  /** Secondary: Celeste Tecnológico **/
+  --ion-color-secondary: #0284c7;
+  --ion-color-secondary-rgb: 2, 132, 199;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #0369a1;
+  --ion-color-secondary-tint: #38bdf8;
+
+  /** Tertiary: Índigo **/
+  --ion-color-tertiary: #4f46e5;
+  --ion-color-tertiary-rgb: 79, 70, 229;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade: #4338ca;
+  --ion-color-tertiary-tint: #6366f1;
+
+  /** Success: Verde Esmeralda Alto Contraste **/
+  --ion-color-success: #059669;
+  --ion-color-success-rgb: 5, 150, 105;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #047857;
+  --ion-color-success-tint: #10b981;
+
+  /** Warning: Ámbar **/
+  --ion-color-warning: #d97706;
+  --ion-color-warning-rgb: 217, 119, 6;
+  --ion-color-warning-contrast: #ffffff;
+  --ion-color-warning-contrast-rgb: 255, 255, 255;
+  --ion-color-warning-shade: #b45309;
+  --ion-color-warning-tint: #f59e0b;
+
+  /** Danger: Rubí **/
+  --ion-color-danger: #dc2626;
+  --ion-color-danger-rgb: 220, 38, 38;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #b91c1c;
+  --ion-color-danger-tint: #ef4444;
+
+  /** Dark & Light **/
+  --ion-color-dark: #0f172a;
+  --ion-color-dark-rgb: 15, 23, 42;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-contrast-rgb: 255, 255, 255;
+
+  --ion-color-light: #f8fafc;
+  --ion-color-light-rgb: 248, 250, 252;
+  --ion-color-light-contrast: #0f172a;
+  --ion-color-light-contrast-rgb: 15, 23, 42;
+
+  --ion-background-color: #f8fafc;
+  --ion-card-background: #ffffff;
+  --ion-text-color: #0f172a;
+}
+
+// Variables para Tema Oscuro
+body.ion-palette-dark {
+  --ion-background-color: #0b0f19;
+  --ion-background-color-rgb: 11, 15, 25;
+  --ion-text-color: #f1f5f9;
+  --ion-text-color-rgb: 241, 245, 249;
+  --ion-card-background: #151d30;
+  --ion-item-background: #151d30;
+  --ion-color-step-50: #1a233a;
+  --ion-color-step-100: #202b46;
+  --ion-color-step-150: #263352;
+  --ion-color-step-200: #2c3b5e;
+  --ion-color-step-300: #384b76;
+  --ion-color-step-400: #64748b;
+  --ion-color-step-500: #94a3b8;
+  --ion-color-step-600: #cbd5e1;
+  --ion-color-step-700: #e2e8f0;
+  --ion-color-step-800: #f1f5f9;
+  --ion-color-step-900: #f8fafc;
+}

@@ -1,0 +1,215 @@
+<ion-content class="register-content ion-padding">
+  <div class="register-container">
+    <!-- Encabezado de Marca -->
+    <div class="brand-header">
+      <div class="brand-logo" aria-hidden="true">
+        <ion-icon name="person-add-outline"></ion-icon>
+      </div>
+      <h1 class="brand-title">Alta de Nuevo Registro</h1>
+      <p class="brand-subtitle">Incorporación de usuarios al sistema corporativo NovaGestión</p>
+    </div>
+
+    <!-- Tarjeta Principal de Registro -->
+    <ion-card class="register-card">
+      <ion-card-content>
+        <h2>Datos del Registro</h2>
+        <p class="form-instructions">
+          Formulario con validaciones asíncronas en tiempo real contra el servicio de base de datos.
+        </p>
+
+        <!-- Mensaje de Error General -->
+        <div *ngIf="errorMessage" class="error-banner" role="alert" aria-live="assertive">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+          <div class="form-grid">
+            <!-- Nombre Completo -->
+            <div class="form-group" [class.has-error]="isFieldInvalid('fullName')">
+              <ion-item lines="none" class="custom-input-item">
+                <ion-icon name="person-outline" slot="start" aria-hidden="true"></ion-icon>
+                <ion-input
+                  label="Nombre y Apellidos"
+                  labelPlacement="floating"
+                  formControlName="fullName"
+                  placeholder="Ej: Laura Gómez Pérez"
+                  aria-required="true"
+                ></ion-input>
+              </ion-item>
+              <div *ngIf="isFieldInvalid('fullName')" class="field-error-text" role="alert">
+                <span>El nombre es obligatorio (mínimo 3 caracteres).</span>
+              </div>
+            </div>
+
+            <!-- Email con Validación Asíncrona -->
+            <div class="form-group" [class.has-error]="isFieldInvalid('email')" [class.is-valid]="isFieldSuccess('email')">
+              <ion-item lines="none" class="custom-input-item">
+                <ion-icon name="mail-outline" slot="start" aria-hidden="true"></ion-icon>
+                <ion-input
+                  label="Correo Corporativo"
+                  labelPlacement="floating"
+                  type="email"
+                  formControlName="email"
+                  placeholder="usuario@empresa.com"
+                  aria-required="true"
+                ></ion-input>
+                <!-- Indicador de validación asíncrona -->
+                <ion-spinner *ngIf="isFieldPending('email')" name="crescent" slot="end" color="primary"></ion-spinner>
+                <ion-icon *ngIf="isFieldSuccess('email') && !isFieldPending('email')" name="checkmark-circle" slot="end" class="success-icon"></ion-icon>
+              </ion-item>
+              <div *ngIf="isFieldPending('email')" class="field-pending-text">
+                <small>Verificando disponibilidad en BD asíncronamente...</small>
+              </div>
+              <div *ngIf="isFieldInvalid('email')" class="field-error-text" role="alert">
+                <span *ngIf="registerForm.get('email')?.errors?.['required']">El correo es obligatorio.</span>
+                <span *ngIf="registerForm.get('email')?.errors?.['email']">Formato de correo no válido.</span>
+                <span *ngIf="registerForm.get('email')?.errors?.['emailTaken']">
+                  <strong>¡Este correo ya existe en el sistema!</strong> (Prueba otro correo).
+                </span>
+              </div>
+            </div>
+
+            <!-- DNI / CIF con Validación Asíncrona -->
+            <div class="form-group" [class.has-error]="isFieldInvalid('dniCif')" [class.is-valid]="isFieldSuccess('dniCif')">
+              <ion-item lines="none" class="custom-input-item">
+                <ion-icon name="id-card-outline" slot="start" aria-hidden="true"></ion-icon>
+                <ion-input
+                  label="DNI o CIF"
+                  labelPlacement="floating"
+                  formControlName="dniCif"
+                  placeholder="12345678Z o B87654321"
+                  aria-required="true"
+                ></ion-input>
+                <ion-spinner *ngIf="isFieldPending('dniCif')" name="crescent" slot="end" color="primary"></ion-spinner>
+                <ion-icon *ngIf="isFieldSuccess('dniCif') && !isFieldPending('dniCif')" name="checkmark-circle" slot="end" class="success-icon"></ion-icon>
+              </ion-item>
+              <div *ngIf="isFieldPending('dniCif')" class="field-pending-text">
+                <small>Comprobando DNI/CIF en base de datos...</small>
+              </div>
+              <div *ngIf="isFieldInvalid('dniCif')" class="field-error-text" role="alert">
+                <span *ngIf="registerForm.get('dniCif')?.errors?.['required']">El DNI/CIF es obligatorio.</span>
+                <span *ngIf="registerForm.get('dniCif')?.errors?.['invalidDniCif']">Formato de DNI o CIF español incorrecto.</span>
+                <span *ngIf="registerForm.get('dniCif')?.errors?.['dniTaken']">Este documento ya está registrado.</span>
+              </div>
+            </div>
+
+            <!-- Empresa / Organización -->
+            <div class="form-group" [class.has-error]="isFieldInvalid('companyName')">
+              <ion-item lines="none" class="custom-input-item">
+                <ion-icon name="business-outline" slot="start" aria-hidden="true"></ion-icon>
+                <ion-input
+                  label="Empresa / Razón Social"
+                  labelPlacement="floating"
+                  formControlName="companyName"
+                  placeholder="Ej: Nova Sistemas S.L."
+                  aria-required="true"
+                ></ion-input>
+              </ion-item>
+              <div *ngIf="isFieldInvalid('companyName')" class="field-error-text" role="alert">
+                <span>Indica la razón social de la empresa.</span>
+              </div>
+            </div>
+
+            <!-- Teléfono -->
+            <div class="form-group" [class.has-error]="isFieldInvalid('phone')">
+              <ion-item lines="none" class="custom-input-item">
+                <ion-icon name="call-outline" slot="start" aria-hidden="true"></ion-icon>
+                <ion-input
+                  label="Teléfono de Contacto"
+                  labelPlacement="floating"
+                  type="tel"
+                  formControlName="phone"
+                  placeholder="+34 600 000 000"
+                ></ion-input>
+              </ion-item>
+            </div>
+
+            <!-- Selección de Rol de Acceso -->
+            <div class="form-group">
+              <ion-item lines="none" class="custom-input-item select-item">
+                <ion-icon name="shield-half-outline" slot="start" aria-hidden="true"></ion-icon>
+                <ion-select
+                  label="Rol en el Sistema"
+                  labelPlacement="floating"
+                  formControlName="role"
+                  interface="popover"
+                >
+                  <ion-select-option value="user">Usuario Estándar (Acceso normal)</ion-select-option>
+                  <ion-select-option value="admin">Administrador (Acceso total y métricas)</ion-select-option>
+                </ion-select>
+              </ion-item>
+            </div>
+
+            <!-- Contraseña -->
+            <div class="form-group" [class.has-error]="isFieldInvalid('password')">
+              <ion-item lines="none" class="custom-input-item">
+                <ion-icon name="lock-closed-outline" slot="start" aria-hidden="true"></ion-icon>
+                <ion-input
+                  label="Contraseña"
+                  labelPlacement="floating"
+                  type="password"
+                  formControlName="password"
+                  placeholder="Mínimo 6 car. con número"
+                  aria-required="true"
+                ></ion-input>
+              </ion-item>
+              <div *ngIf="isFieldInvalid('password')" class="field-error-text" role="alert">
+                <span *ngIf="registerForm.get('password')?.errors?.['required']">Contraseña obligatoria.</span>
+                <span *ngIf="registerForm.get('password')?.errors?.['minLength']">Mínimo 6 caracteres.</span>
+                <span *ngIf="registerForm.get('password')?.errors?.['requireNumber']">Debe contener al menos un número.</span>
+              </div>
+            </div>
+
+            <!-- Confirmación de Contraseña -->
+            <div class="form-group" [class.has-error]="isFieldInvalid('confirmPassword') || registerForm.hasError('fieldsMismatch')">
+              <ion-item lines="none" class="custom-input-item">
+                <ion-icon name="lock-closed-outline" slot="start" aria-hidden="true"></ion-icon>
+                <ion-input
+                  label="Repetir Contraseña"
+                  labelPlacement="floating"
+                  type="password"
+                  formControlName="confirmPassword"
+                  placeholder="Confirma tu clave"
+                  aria-required="true"
+                ></ion-input>
+              </ion-item>
+              <div *ngIf="registerForm.hasError('fieldsMismatch') && registerForm.get('confirmPassword')?.touched" class="field-error-text" role="alert">
+                <span>Las contraseñas no coinciden.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aceptación de Términos (Data binding bidireccional) -->
+          <div class="terms-row" [class.has-error]="isFieldInvalid('acceptTerms')">
+            <ion-checkbox formControlName="acceptTerms" labelPlacement="end">
+              Acepto las condiciones del servicio y la política de privacidad de datos.
+            </ion-checkbox>
+            <div *ngIf="isFieldInvalid('acceptTerms')" class="field-error-text" role="alert">
+              <span>Debes aceptar las condiciones para continuar.</span>
+            </div>
+          </div>
+
+          <!-- Botón de Envío -->
+          <ion-button
+            type="submit"
+            expand="block"
+            size="large"
+            color="primary"
+            class="submit-button"
+            [disabled]="isSubmitting || registerForm.pending"
+          >
+            <ion-spinner *ngIf="isSubmitting" name="crescent" slot="start"></ion-spinner>
+            <span *ngIf="!isSubmitting">Finalizar Alta y Acceder</span>
+            <span *ngIf="isSubmitting">Registrando en base de datos...</span>
+          </ion-button>
+        </form>
+
+        <div class="back-prompt">
+          <span>¿Ya tienes una cuenta registrada? </span>
+          <a routerLink="/login" class="login-link">Volver al inicio de sesión</a>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

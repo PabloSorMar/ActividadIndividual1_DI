@@ -1,28 +1,206 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Panel de Administrador</ion-title>
-    <ion-buttons slot="end">
-      <ion-button (click)="logout()">Cerrar Sesión</ion-button>
-    </ion-buttons>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="dashboard-content ion-padding">
+  <!-- Barra Superior / Header de Página -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="role-badge-row">
+        <ion-badge color="danger">Rol Administrador</ion-badge>
+        <span class="company-tag">{{ authService.getCurrentUser()?.company }}</span>
+      </div>
+      <h1>Cuadro de Mando Integral</h1>
+      <p>Supervisión analítica, concurrencia SQL/NoSQL y generación de informes tabulados.</p>
+    </div>
 
-<ion-content class="ion-padding">
-  <h2>Bienvenido, Administrador</h2>
-  <p>Aquí tienes el resumen operativo del sistema:</p>
+    <div class="header-actions">
+      <!-- Filtro en Tiempo Real (Paso 3.2) -->
+      <ion-segment
+        [value]="selectedFilter"
+        (ionChange)="onFilterChange($event)"
+        class="filter-segment"
+        aria-label="Filtro temporal de datos"
+      >
+        <ion-segment-button value="all">
+          <ion-label>Todo</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="year">
+          <ion-label>2026</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="month">
+          <ion-label>Este Mes</ion-label>
+        </ion-segment-button>
+      </ion-segment>
 
-  <!-- Uso del componente personalizado reutilizable -->
-  <app-stat-card 
-    title="Usuarios Registrados" 
-    value="1,245" 
-    color="primary"
-    (cardClick)="onCardAction($event)">
-  </app-stat-card>
+      <!-- Botones de Exportación (Paso 3.3) -->
+      <div class="export-group">
+        <ion-button
+          fill="outline"
+          color="primary"
+          (click)="exportCsv()"
+          aria-label="Exportar datos a CSV"
+        >
+          <ion-icon slot="start" name="document-text-outline"></ion-icon>
+          CSV
+        </ion-button>
 
-  <app-stat-card 
-    title="Ingresos Mensuales" 
-    value="14,350 €" 
-    color="success"
-    (cardClick)="onCardAction($event)">
-  </app-stat-card>
+        <ion-button
+          fill="solid"
+          color="primary"
+          (click)="exportPdf()"
+          aria-label="Exportar informe profesional a PDF"
+        >
+          <ion-icon slot="start" name="download-outline"></ion-icon>
+          PDF
+        </ion-button>
+
+        <ion-button
+          fill="clear"
+          color="medium"
+          (click)="loadData()"
+          aria-label="Recargar datos concurrentes"
+        >
+          <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+        </ion-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado de Carga con Spinner -->
+  <div *ngIf="isLoading" class="loading-container" role="status" aria-live="polite">
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+    <p>Consumiendo concurrentemente fuentes SQL y NoSQL...</p>
+  </div>
+
+  <!-- Contenido Principal cuando está cargado -->
+  <div *ngIf="!isLoading && metrics" class="dashboard-body">
+    <!-- Fila 1: Componentes Reutilizables StatCardComponent (RA 3) -->
+    <ion-grid class="ion-no-padding stats-grid">
+      <ion-row>
+        <ion-col size="12" size-sm="6" size-lg="3">
+          <app-stat-card
+            title="Ingresos Totales"
+            [value]="(metrics.totalRevenue | number:'1.0-0':'es') || '0'"
+            suffix=" €"
+            icon="cash-outline"
+            color="primary"
+            [trend]="metrics.revenueTrend"
+            trendLabel="vs. período anterior"
+          ></app-stat-card>
+        </ion-col>
+
+        <ion-col size="12" size-sm="6" size-lg="3">
+          <app-stat-card
+            title="Clientes Activos"
+            [value]="metrics.activeCustomers"
+            icon="people-outline"
+            color="secondary"
+            [trend]="metrics.customersTrend"
+            trendLabel="crecimiento orgánico"
+          ></app-stat-card>
+        </ion-col>
+
+        <ion-col size="12" size-sm="6" size-lg="3">
+          <app-stat-card
+            title="Facturas Pendientes"
+            [value]="metrics.pendingInvoices"
+            icon="time-outline"
+            color="warning"
+            [description]="((metrics.pendingInvoicesAmount | number:'1.0-0':'es') || '0') + ' € por cobrar'"
+          ></app-stat-card>
+        </ion-col>
+
+        <ion-col size="12" size-sm="6" size-lg="3">
+          <app-stat-card
+            title="Ratio Satisfacción"
+            [value]="metrics.satisfactionRate"
+            suffix="%"
+            icon="star-outline"
+            color="success"
+            [trend]="2.4"
+            trendLabel="auditoría de calidad"
+          ></app-stat-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- Fila 2: Gráficos Interactivos Chart.js (Paso 3.2) -->
+    <ion-grid class="ion-no-padding charts-grid ion-margin-top">
+      <ion-row>
+        <!-- Gráfico de Evolución Mensual -->
+        <ion-col size="12" size-lg="8">
+          <div class="chart-card">
+            <div class="card-header-clean">
+              <div class="title-wrap">
+                <ion-icon name="trending-up-outline" color="primary"></ion-icon>
+                <h3>Evolución de Facturación Mensual vs Objetivos</h3>
+              </div>
+              <span class="chart-badge">Chart.js Interactivo</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas #revenueChartCanvas></canvas>
+            </div>
+          </div>
+        </ion-col>
+
+        <!-- Gráfico Donut de Estados -->
+        <ion-col size="12" size-lg="4">
+          <div class="chart-card">
+            <div class="card-header-clean">
+              <div class="title-wrap">
+                <ion-icon name="pie-chart-outline" color="secondary"></ion-icon>
+                <h3>Distribución por Estados</h3>
+              </div>
+            </div>
+            <div class="chart-wrapper donut-wrapper">
+              <canvas #statusChartCanvas></canvas>
+            </div>
+          </div>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <!-- Fila 3: Tabla de Datos Agnóstica (DataTableComponent) y Feed en Tiempo Real NoSQL -->
+    <ion-grid class="ion-no-padding data-grid ion-margin-top">
+      <ion-row>
+        <!-- Tabla de Facturación Relacional -->
+        <ion-col size="12" size-xl="8">
+          <app-data-table
+            title="Últimas Facturas Emitidas (Fuente SQL Relacional)"
+            [data]="invoices"
+            [columns]="tableColumns"
+            [actions]="tableActions"
+            [pageSize]="5"
+            searchPlaceholder="Buscar por cliente, nº factura..."
+            (actionClick)="onTableAction($event)"
+          ></app-data-table>
+        </ion-col>
+
+        <!-- Feed en Tiempo Real de Eventos NoSQL (Paso 3.1) -->
+        <ion-col size="12" size-xl="4">
+          <div class="realtime-feed-card">
+            <div class="feed-header">
+              <div class="feed-title">
+                <span class="live-dot" aria-hidden="true"></span>
+                <h3>Stream en Tiempo Real (NoSQL)</h3>
+              </div>
+              <ion-badge color="tertiary">{{ liveLogs.length }} eventos</ion-badge>
+            </div>
+            <p class="feed-subtitle">Registro de actividad y suscripciones push en vivo.</p>
+
+            <div class="logs-list" role="log" aria-live="polite">
+              <div *ngFor="let log of liveLogs" class="log-item" [class]="'sev-' + log.severity">
+                <div class="log-meta">
+                  <span class="log-action">{{ log.action }}</span>
+                  <span class="log-time">{{ log.timestamp }}</span>
+                </div>
+                <p class="log-details">{{ log.details }}</p>
+                <div class="log-author">
+                  <ion-icon name="person-circle-outline"></ion-icon>
+                  <span>{{ log.userName }} ({{ log.userRole }})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
 </ion-content>

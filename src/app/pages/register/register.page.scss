@@ -1,0 +1,197 @@
+.register-content {
+  --background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+.register-container {
+  max-width: 680px;
+  margin: 1.5rem auto 3rem;
+  padding: 0 1rem;
+}
+
+.brand-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+
+  .brand-logo {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #3880ff 0%, #3dc2ff 100%);
+    border-radius: 16px;
+    margin: 0 auto 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 2rem;
+    box-shadow: 0 8px 24px rgba(56, 128, 255, 0.35);
+  }
+
+  .brand-title {
+    margin: 0;
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  .brand-subtitle {
+    margin: 0.35rem 0 0;
+    font-size: 0.88rem;
+    color: #94a3b8;
+  }
+}
+
+.register-card {
+  border-radius: 20px;
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+
+  ion-card-content {
+    padding: 2rem;
+
+    h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .form-instructions {
+      margin: 0 0 1.5rem;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+
+  @media (min-width: 600px) {
+    grid-template-columns: 1fr 1fr;
+
+    .form-group:nth-child(1),
+    .form-group:nth-child(4) {
+      grid-column: span 2;
+    }
+  }
+}
+
+.form-group {
+  margin-bottom: 0.5rem;
+
+  &.has-error {
+    .custom-input-item {
+      border-color: #ef4444;
+    }
+  }
+
+  &.is-valid {
+    .custom-input-item {
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+  }
+
+  .custom-input-item {
+    --background: rgba(15, 23, 42, 0.6);
+    --color: #ffffff;
+    --placeholder-color: #64748b;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+
+    &:focus-within {
+      border-color: #3880ff;
+      box-shadow: 0 0 0 3px rgba(56, 128, 255, 0.25);
+    }
+
+    ion-icon {
+      color: #94a3b8;
+      margin-inline-end: 8px;
+    }
+
+    .success-icon {
+      color: #10b981;
+      font-size: 1.3rem;
+    }
+  }
+
+  .field-error-text {
+    margin-top: 0.3rem;
+    padding-left: 0.5rem;
+    font-size: 0.76rem;
+    color: #f87171;
+    font-weight: 500;
+  }
+
+  .field-pending-text {
+    margin-top: 0.3rem;
+    padding-left: 0.5rem;
+    font-size: 0.75rem;
+    color: #3880ff;
+  }
+}
+
+.terms-row {
+  margin: 1rem 0 1.5rem;
+
+  ion-checkbox {
+    --size: 18px;
+    --checkbox-background-checked: #3880ff;
+    --border-color: #64748b;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+  }
+
+  .field-error-text {
+    margin-top: 0.35rem;
+    font-size: 0.76rem;
+    color: #f87171;
+  }
+}
+
+.submit-button {
+  --border-radius: 12px;
+  font-weight: 700;
+  height: 48px;
+  margin: 0;
+}
+
+.back-prompt {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: #94a3b8;
+
+  .login-link {
+    color: #3880ff;
+    text-decoration: none;
+    font-weight: 600;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.error-banner {
+  background: rgba(235, 68, 90, 0.15);
+  border: 1px solid rgba(235, 68, 90, 0.3);
+  color: #fca5a5;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+
+  ion-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+}

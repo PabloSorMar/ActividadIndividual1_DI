@@ -1,13 +1,129 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>user-dashboard</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="user-dashboard-content ion-padding">
+  <!-- Cabecera -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="role-badge-row">
+        <ion-badge color="primary">Rol Usuario Estándar</ion-badge>
+        <span class="user-email">{{ authService.getCurrentUser()?.email }}</span>
+      </div>
+      <h1>Portal del Usuario</h1>
+      <p>Bienvenido/a, {{ authService.getCurrentUser()?.name }}. Consulta tus tareas y solicitudes.</p>
+    </div>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">user-dashboard</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <div class="header-actions">
+      <ion-button fill="outline" color="primary" (click)="openHelpModal()">
+        <ion-icon slot="start" name="help-circle-outline"></ion-icon>
+        Manual de Ayuda
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Métricas Rápidas del Usuario -->
+  <ion-grid class="ion-no-padding stats-grid">
+    <ion-row>
+      <ion-col size="12" size-md="4">
+        <app-stat-card
+          title="Gestiones Asignadas"
+          [value]="myTasks.length"
+          icon="clipboard-outline"
+          color="primary"
+          description="Total registradas"
+        ></app-stat-card>
+      </ion-col>
+
+      <ion-col size="12" size-md="4">
+        <app-stat-card
+          title="Completadas"
+          [value]="1"
+          icon="checkmark-circle-outline"
+          color="success"
+          trendLabel="100% al día"
+        ></app-stat-card>
+      </ion-col>
+
+      <ion-col size="12" size-md="4">
+        <app-stat-card
+          title="Nivel de Privilegios"
+          value="Estándar"
+          icon="key-outline"
+          color="secondary"
+          description="Rutas de administración protegidas"
+        ></app-stat-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <!-- Contenedor Principal: Lista de Tareas y Formulario de Petición -->
+  <ion-grid class="ion-no-padding ion-margin-top">
+    <ion-row>
+      <!-- Mis Tareas -->
+      <ion-col size="12" size-lg="7">
+        <div class="tasks-card">
+          <div class="card-head">
+            <h3>📋 Mis Gestiones y Solicitudes</h3>
+            <ion-badge color="primary">{{ myTasks.length }} activas</ion-badge>
+          </div>
+
+          <div class="task-items-list">
+            <div *ngFor="let t of myTasks" class="task-card-item">
+              <div class="task-icon-box" [class]="t.status">
+                <ion-icon [name]="t.status === 'completada' ? 'checkmark-outline' : (t.status === 'en_progreso' ? 'sync-outline' : 'time-outline')"></ion-icon>
+              </div>
+              <div class="task-body">
+                <h4>{{ t.title }}</h4>
+                <div class="task-tags">
+                  <span class="category-tag">{{ t.category }}</span>
+                  <span class="date-tag">Fecha: {{ t.date }}</span>
+                  <ion-badge [color]="t.status === 'completada' ? 'success' : (t.status === 'en_progreso' ? 'warning' : 'medium')">
+                    {{ t.status.replace('_', ' ').toUpperCase() }}
+                  </ion-badge>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ion-col>
+
+      <!-- Nueva Solicitud -->
+      <ion-col size="12" size-lg="5">
+        <div class="new-request-card">
+          <div class="card-head">
+            <h3>✉️ Enviar Nueva Solicitud</h3>
+          </div>
+          <p class="form-desc">Comunica cualquier petición o incidencia al equipo de administración.</p>
+
+          <form [formGroup]="requestForm" (ngSubmit)="submitRequest()">
+            <ion-item lines="none" class="custom-field">
+              <ion-input
+                label="Asunto de la solicitud"
+                labelPlacement="stacked"
+                formControlName="subject"
+                placeholder="Ej: Acceso a nuevo módulo"
+              ></ion-input>
+            </ion-item>
+
+            <ion-item lines="none" class="custom-field ion-margin-top">
+              <ion-textarea
+                label="Descripción detallada"
+                labelPlacement="stacked"
+                rows="4"
+                formControlName="description"
+                placeholder="Explica tu necesidad detalladamente..."
+              ></ion-textarea>
+            </ion-item>
+
+            <ion-button
+              expand="block"
+              type="submit"
+              color="primary"
+              class="ion-margin-top"
+              [disabled]="requestForm.invalid || isSubmittingRequest"
+            >
+              {{ isSubmittingRequest ? 'Enviando...' : 'Enviar Solicitud' }}
+            </ion-button>
+          </form>
+        </div>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
 </ion-content>

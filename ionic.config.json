@@ -1,0 +1,7 @@
+{
+  "name": "mi-app-gestion",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}

@@ -1,0 +1,28 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Panel de Administrador</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="logout()">Cerrar Sesión</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <h2>Bienvenido, Administrador</h2>
+  <p>Aquí tienes el resumen operativo del sistema:</p>
+
+  <!-- Uso del componente personalizado reutilizable -->
+  <app-stat-card 
+    title="Usuarios Registrados" 
+    value="1,245" 
+    color="primary"
+    (cardClick)="onCardAction($event)">
+  </app-stat-card>
+
+  <app-stat-card 
+    title="Ingresos Mensuales" 
+    value="14,350 €" 
+    color="success"
+    (cardClick)="onCardAction($event)">
+  </app-stat-card>
+</ion-content>

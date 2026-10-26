@@ -10,7 +10,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "doc": "typedoc --entryPoints src/main.ts --out docs"
+    "doc": "typedoc"
   },
   "private": true,
   "dependencies": {

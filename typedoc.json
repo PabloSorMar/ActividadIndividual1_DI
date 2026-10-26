@@ -1,0 +1,26 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/main.ts",
+    "src/app/core/models/auth.models.ts",
+    "src/app/core/models/business.models.ts",
+    "src/app/core/models/component.models.ts",
+    "src/app/core/services/auth.service.ts",
+    "src/app/core/services/sql-database.service.ts",
+    "src/app/core/services/realtime-doc.service.ts",
+    "src/app/core/services/report-export.service.ts",
+    "src/app/core/services/notification.service.ts",
+    "src/app/core/validators/custom-validators.ts",
+    "src/app/shared/components/data-table/data-table.component.ts",
+    "src/app/shared/components/stat-card/stat-card.component.ts",
+    "src/app/shared/components/help-modal/help-modal.component.ts"
+  ],
+  "out": "docs",
+  "exclude": [
+    "**/*.spec.ts",
+    "node_modules/**"
+  ],
+  "skipErrorChecking": true,
+  "readme": "README.md",
+  "name": "NovaGestión API Documentation"
+}

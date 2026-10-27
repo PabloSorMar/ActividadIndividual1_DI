@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import {
   IonContent,
@@ -16,16 +16,18 @@ import {
 } from '@ionic/angular';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { SupabaseService } from '../../core/services/supabase.service';
 
 /**
  * Página de Inicio de Sesión (Fase 1 - Paso 1.2).
- * Implementa Formularios Reactivos, manejo de errores UX y acceso rápido para evaluación.
+ * Valida credenciales estrictamente contra Supabase.
  */
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     RouterLink,
     IonContent,
@@ -45,34 +47,26 @@ export class LoginPage {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
+  public supabaseService = inject(SupabaseService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
   public loginForm: FormGroup = this.fb.group({
-    email: ['admin@empresa.com', [Validators.required, Validators.email]],
-    password: ['admin123', [Validators.required, Validators.minLength(4)]],
+    email: ['', [Validators.required, Validators.minLength(3)]],
+    password: ['', [Validators.required, Validators.minLength(3)]],
     rememberMe: [true]
   });
 
   public isSubmitting: boolean = false;
   public errorMessage: string = '';
+  public anonKeyInput: string = '';
 
-  /**
-   * Auto-rellena credenciales de prueba para facilitar la corrección docente
-   */
-  public fillCredentials(role: 'admin' | 'user'): void {
-    if (role === 'admin') {
-      this.loginForm.patchValue({
-        email: 'admin@empresa.com',
-        password: 'admin123'
-      });
-    } else {
-      this.loginForm.patchValue({
-        email: 'user@empresa.com',
-        password: 'user123'
-      });
+  public saveKey(): void {
+    if (this.anonKeyInput.trim()) {
+      this.supabaseService.setAnonKey(this.anonKeyInput.trim());
+      this.notificationService.showToast('Clave anon de Supabase guardada correctamente', 'success');
+      this.errorMessage = '';
     }
-    this.errorMessage = '';
   }
 
   public onSubmit(): void {

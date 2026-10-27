@@ -1,15 +1,16 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, from } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
 import { Customer, DashboardMetrics, Invoice, InvoiceStatus } from '../models/business.models';
+import { SupabaseService } from './supabase.service';
 
 const CUSTOMERS_KEY = 'novagestion_sql_customers';
 const INVOICES_KEY = 'novagestion_sql_invoices';
 
 /**
- * Servicio de Consumo Asíncrono de Fuente Relacional (SQL simulado) (RA 5).
- * Simula una API REST sobre base de datos relacional con claves foráneas,
- * operaciones CRUD asíncronas y persistencia local para pruebas.
+ * Servicio de Consumo Asíncrono de Fuente Relacional y Supabase (RA 5).
+ * Conecta directamente los clientes con la tabla 'clients' de Supabase
+ * eliminando cualquier dato semilla o ejemplo local.
  */
 @Injectable({
   providedIn: 'root'
@@ -18,82 +19,24 @@ export class SqlDatabaseService {
   private customers: Customer[] = [];
   private invoices: Invoice[] = [];
 
-  constructor() {
+  constructor(private supabaseService: SupabaseService) {
     this.seedDatabaseIfEmpty();
   }
 
   private seedDatabaseIfEmpty(): void {
-    const savedCust = localStorage.getItem(CUSTOMERS_KEY);
-    const savedInv = localStorage.getItem(INVOICES_KEY);
+    // Limpiamos cualquier caché con clientes de ejemplo previos
+    localStorage.removeItem(CUSTOMERS_KEY);
+    this.customers = [];
 
-    if (savedCust && savedInv) {
+    const savedInv = localStorage.getItem(INVOICES_KEY);
+    if (savedInv) {
       try {
-        this.customers = JSON.parse(savedCust);
         this.invoices = JSON.parse(savedInv);
         return;
       } catch {
         // En caso de corrupción, reseeding
       }
     }
-
-    // Datos semilla relacionales iniciales
-    this.customers = [
-      {
-        id: 'cust-101',
-        name: 'TecnoIberia Soluciones S.A.',
-        cif: 'A28901234',
-        email: 'contacto@tecnoiberia.es',
-        phone: '+34 912 345 678',
-        address: 'Paseo de la Castellana 140, Madrid',
-        status: 'activo',
-        totalSpent: 48950.0,
-        createdAt: '2025-11-12'
-      },
-      {
-        id: 'cust-102',
-        name: 'Logística Cantábrica S.L.',
-        cif: 'B39887766',
-        email: 'info@logisticacantabrica.com',
-        phone: '+34 942 554 433',
-        address: 'Polígono de Candina, Nave 4, Santander',
-        status: 'activo',
-        totalSpent: 31200.0,
-        createdAt: '2025-12-04'
-      },
-      {
-        id: 'cust-103',
-        name: 'Biotec Médica Avanzada',
-        cif: 'A48112233',
-        email: 'compras@biotecmedica.org',
-        phone: '+34 944 123 456',
-        address: 'Parque Tecnológico de Bizkaia, Edif. 201',
-        status: 'activo',
-        totalSpent: 87400.0,
-        createdAt: '2026-01-15'
-      },
-      {
-        id: 'cust-104',
-        name: 'Mediterráneo Retail Group',
-        cif: 'B96554433',
-        email: 'administracion@medretail.es',
-        phone: '+34 963 887 766',
-        address: 'Gran Vía Marqués del Turia 45, Valencia',
-        status: 'prospecto',
-        totalSpent: 4200.0,
-        createdAt: '2026-02-01'
-      },
-      {
-        id: 'cust-105',
-        name: 'Consultores Innova Madrid',
-        cif: 'B82334455',
-        email: 'finanzas@innovaconsult.es',
-        phone: '+34 915 678 900',
-        address: 'Calle Serrano 90, Madrid',
-        status: 'inactivo',
-        totalSpent: 12500.0,
-        createdAt: '2025-09-20'
-      }
-    ];
 
     this.invoices = [
       {
@@ -172,28 +115,48 @@ export class SqlDatabaseService {
     localStorage.setItem(INVOICES_KEY, JSON.stringify(this.invoices));
   }
 
-  // =================== CLIENTES (SQL CRUD) ===================
+  // =================== CLIENTES (SUPABASE REAL-TIME) ===================
 
   public getCustomers(): Observable<Customer[]> {
-    return of([...this.customers]).pipe(delay(350));
+    return from(this.supabaseService.getClients()).pipe(
+      map(supaClients => supaClients.map((c: any) => ({
+        id: c.id,
+        name: c.nombre || c.name || 'Cliente Supabase',
+        cif: c.cif || 'B00000000',
+        email: c.email || '',
+        phone: c.phone || '',
+        address: c.empresa || '',
+        status: 'activo' as const,
+        totalSpent: 0,
+        createdAt: c.created_at || new Date().toISOString()
+      }))),
+      tap(custs => {
+        this.customers = custs;
+      })
+    );
   }
 
   public getCustomerById(id: string): Observable<Customer | null> {
     const found = this.customers.find(c => c.id === id) || null;
-    return of(found ? { ...found } : null).pipe(delay(250));
+    return of(found ? { ...found } : null).pipe(delay(100));
   }
 
   public createCustomer(customer: Omit<Customer, 'id' | 'createdAt' | 'totalSpent'>): Observable<Customer> {
-    const newCust: Customer = {
-      ...customer,
-      id: `cust-${Date.now()}`,
-      totalSpent: 0,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-
-    this.customers.unshift(newCust);
-    this.persist();
-    return of(newCust).pipe(delay(400));
+    return from(this.supabaseService.addClient({
+      nombre: customer.name,
+      empresa: customer.address || customer.name,
+      email: customer.email
+    })).pipe(
+      map((res: any) => ({
+        ...customer,
+        id: res.id,
+        totalSpent: 0,
+        createdAt: res.created_at || new Date().toISOString()
+      })),
+      tap(newCust => {
+        this.customers.unshift(newCust);
+      })
+    );
   }
 
   public updateCustomer(id: string, updates: Partial<Customer>): Observable<Customer | null> {
@@ -202,15 +165,16 @@ export class SqlDatabaseService {
 
     this.customers[index] = { ...this.customers[index], ...updates };
     this.persist();
-    return of(this.customers[index]).pipe(delay(350));
+    return of(this.customers[index]).pipe(delay(200));
   }
 
   public deleteCustomer(id: string): Observable<boolean> {
-    const initialLen = this.customers.length;
-    this.customers = this.customers.filter(c => c.id !== id);
-    const deleted = this.customers.length < initialLen;
-    if (deleted) this.persist();
-    return of(deleted).pipe(delay(300));
+    return from(this.supabaseService.deleteClient(id)).pipe(
+      tap(() => {
+        this.customers = this.customers.filter(c => c.id !== id);
+      }),
+      map(() => true)
+    );
   }
 
   // =================== FACTURAS (SQL CRUD) ===================

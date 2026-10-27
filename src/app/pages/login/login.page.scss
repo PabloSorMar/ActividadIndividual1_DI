@@ -145,29 +145,94 @@
   height: 48px;
 }
 
-.quick-access-box {
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+.key-setup-box {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
+  padding: 0.9rem;
+  margin-bottom: 1.25rem;
 
-  .quick-title {
-    margin: 0 0 0.6rem;
-    font-size: 0.78rem;
-    color: #94a3b8;
-    text-transform: uppercase;
-    font-weight: 600;
-    letter-spacing: 0.5px;
+  .key-setup-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+    color: #fbbf24;
+    margin-bottom: 0.35rem;
+
+    ion-icon {
+      font-size: 1.15rem;
+    }
   }
 
-  .quick-buttons {
+  .key-setup-desc {
+    font-size: 0.78rem;
+    color: #e2e8f0;
+    margin: 0 0 0.6rem;
+    line-height: 1.35;
+
+    code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 4px;
+      border-radius: 4px;
+      color: #3880ff;
+    }
+  }
+
+  .key-input-row {
     display: flex;
     gap: 0.5rem;
-    flex-wrap: wrap;
+    align-items: center;
+
+    .key-inline-input {
+      --background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: #ffffff;
+      padding: 0 6px;
+      flex: 1;
+    }
 
     ion-button {
-      flex: 1;
-      font-size: 0.78rem;
       --border-radius: 8px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.supabase-info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  margin-top: 1.25rem;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+
+  .info-icon {
+    ion-icon {
+      font-size: 1.3rem;
+      margin-top: 2px;
+    }
+  }
+
+  .info-text {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+
+    strong {
+      display: block;
+      color: #34d399;
+      margin-bottom: 0.2rem;
+      font-size: 0.82rem;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.35;
     }
   }
 }

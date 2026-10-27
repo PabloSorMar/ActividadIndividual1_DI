@@ -13,7 +13,24 @@
     <ion-card class="login-card">
       <ion-card-content>
         <h2>Iniciar Sesión</h2>
-        <p class="form-instructions">Introduce tus credenciales corporativas para acceder al sistema.</p>
+        <p class="form-instructions">Introduce las credenciales de tu cuenta creada en Supabase.</p>
+
+        <!-- Banner de Configuración si falta la clave Anon de Supabase -->
+        <div *ngIf="!supabaseService.isConfigured()" class="key-setup-box" role="alert">
+          <div class="key-setup-header">
+            <ion-icon name="key-outline" color="warning"></ion-icon>
+            <strong>Configuración de Clave Supabase</strong>
+          </div>
+          <p class="key-setup-desc">
+            Para validar usuarios contra <code>spfawsmajwnrtzmqiyvy.supabase.co</code>, introduce la anon key:
+          </p>
+          <div class="key-input-row">
+            <ion-input [(ngModel)]="anonKeyInput" placeholder="Pega tu Supabase anon key..." class="key-inline-input"></ion-input>
+            <ion-button size="small" color="primary" (click)="saveKey()" [disabled]="!anonKeyInput.trim()">
+              Conectar
+            </ion-button>
+          </div>
+        </div>
 
         <!-- Mensaje de Error Accesible -->
         <div *ngIf="errorMessage" class="error-banner" role="alert" aria-live="assertive">
@@ -22,24 +39,24 @@
         </div>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
-          <!-- Campo Email -->
+          <!-- Campo Email o Usuario -->
           <div class="form-group" [class.has-error]="isFieldInvalid('email')">
             <ion-item lines="none" class="custom-input-item">
-              <ion-icon name="mail-outline" slot="start" aria-hidden="true"></ion-icon>
+              <ion-icon name="person-circle-outline" slot="start" aria-hidden="true"></ion-icon>
               <ion-input
-                label="Correo Electrónico"
+                label="Usuario o Correo Electrónico"
                 labelPlacement="floating"
-                type="email"
+                type="text"
                 formControlName="email"
-                placeholder="ejemplo@empresa.com"
-                autocomplete="email"
+                placeholder="admin@empresa.com o admin"
+                autocomplete="username"
                 aria-required="true"
                 [attr.aria-invalid]="isFieldInvalid('email')"
               ></ion-input>
             </ion-item>
             <div *ngIf="isFieldInvalid('email')" class="field-error-text" role="alert">
-              <span *ngIf="loginForm.get('email')?.errors?.['required']">El correo es obligatorio.</span>
-              <span *ngIf="loginForm.get('email')?.errors?.['email']">Introduce un formato de email válido.</span>
+              <span *ngIf="loginForm.get('email')?.errors?.['required']">El correo o usuario es obligatorio.</span>
+              <span *ngIf="loginForm.get('email')?.errors?.['minlength']">Introduce al menos 3 caracteres.</span>
             </div>
           </div>
 
@@ -86,31 +103,14 @@
           </ion-button>
         </form>
 
-        <!-- Botones de Acceso Rápido para Pruebas (Evaluación Docente) -->
-        <div class="quick-access-box">
-          <p class="quick-title">⚡ Acceso Rápido de Prueba (Evaluación):</p>
-          <div class="quick-buttons">
-            <ion-button
-              fill="outline"
-              size="small"
-              color="danger"
-              (click)="fillCredentials('admin')"
-              aria-label="Cargar credenciales de Administrador"
-            >
-              <ion-icon slot="start" name="shield-outline"></ion-icon>
-              Demo Administrador
-            </ion-button>
-
-            <ion-button
-              fill="outline"
-              size="small"
-              color="primary"
-              (click)="fillCredentials('user')"
-              aria-label="Cargar credenciales de Usuario Estándar"
-            >
-              <ion-icon slot="start" name="person-outline"></ion-icon>
-              Demo Usuario
-            </ion-button>
+        <!-- Indicador de Autenticación Exclusiva Supabase -->
+        <div class="supabase-info-box">
+          <div class="info-icon">
+            <ion-icon name="shield-checkmark-outline" color="success"></ion-icon>
+          </div>
+          <div class="info-text">
+            <strong>Autenticación Exclusiva Supabase</strong>
+            <p>Solo se admiten usuarios dados de alta en Supabase. Si no dispones de cuenta, regístrate en el enlace inferior.</p>
           </div>
         </div>
 

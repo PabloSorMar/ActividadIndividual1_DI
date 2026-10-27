@@ -19,9 +19,9 @@
       <ion-content class="menu-content">
         <!-- Tarjeta de Perfil del Usuario Activo -->
         <div *ngIf="authService.currentUser$ | async as user" class="user-profile-banner">
-          <ion-avatar class="user-avatar">
-            <img [src]="user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'" alt="Avatar del usuario" />
-          </ion-avatar>
+          <div class="user-avatar-icon" [class.admin]="user.role === 'admin'" aria-hidden="true">
+            <ion-icon [name]="user.role === 'admin' ? 'shield-checkmark' : 'person'"></ion-icon>
+          </div>
           <div class="user-info">
             <h4 class="user-name">{{ user.name }}</h4>
             <span class="user-email">{{ user.email }}</span>

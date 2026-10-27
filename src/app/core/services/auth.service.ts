@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { BehaviorSubject, Observable, from, of } from 'rxjs';
 import { delay, map, tap } from 'rxjs/operators';
 import { AuthState, LoginCredentials, RegisterDto, User, UserRole } from '../models/auth.models';
+import { SupabaseService } from './supabase.service';
 
 const STORAGE_KEY = 'novagestion_auth_session';
 
@@ -25,7 +26,6 @@ export class AuthService {
       company: 'Nova Sistemas S.L.',
       dniCif: 'B87654321',
       phone: '+34 600 112 233',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
       createdAt: '2026-01-10T08:00:00Z',
       lastLogin: new Date().toISOString()
     },
@@ -37,7 +37,6 @@ export class AuthService {
       company: 'Nova Sistemas S.L.',
       dniCif: '48991234F',
       phone: '+34 611 445 566',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
       createdAt: '2026-02-15T09:30:00Z',
       lastLogin: new Date().toISOString()
     }
@@ -121,31 +120,29 @@ export class AuthService {
     return this.authState$.value.isAuthenticated;
   }
 
+  private supabaseService = inject(SupabaseService);
+
   /**
-   * Proceso de autenticación con simulación asíncrona de token JWT (RA 1)
+   * Proceso de autenticación con validación ESTRICTA en Supabase.
+   * Solo los usuarios dados de alta en Supabase pueden acceder.
    */
   public login(credentials: LoginCredentials): Observable<{ success: boolean; message: string; user?: User }> {
     const normalizedEmail = credentials.email.trim().toLowerCase();
     
-    return of(null).pipe(
-      delay(600), // Simula latencia de red
-      map(() => {
-        const user = this.registeredUsers.find(
-          u => u.email.toLowerCase() === normalizedEmail
-        );
+    return from(this.supabaseService.loginWithSupabase(credentials.email, credentials.password)).pipe(
+      map((sbRes) => {
+        if (sbRes.success && sbRes.user) {
+          const user: User = {
+            id: sbRes.user.id,
+            email: normalizedEmail,
+            name: sbRes.user.name || (sbRes.role === 'admin' ? 'Administrador Supabase' : 'Usuario Supabase'),
+            role: sbRes.role,
+            company: 'Nova Sistemas S.L.',
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+          };
 
-        // Acepta passwords 'admin123' o '1234' para admin, 'user123' o '1234' para user, o contraseña directa
-        const isDefaultMatch =
-          (normalizedEmail === 'admin@empresa.com' && (credentials.password === 'admin123' || credentials.password === '1234')) ||
-          (normalizedEmail === 'user@empresa.com' && (credentials.password === 'user123' || credentials.password === '1234')) ||
-          (user && credentials.password.length >= 4);
-
-        if (user && isDefaultMatch) {
-          const token = `mock-jwt-token.${btoa(JSON.stringify({ sub: user.id, role: user.role, exp: Date.now() + 3600000 }))}`;
-          
-          user.lastLogin = new Date().toISOString();
-          this.persistUsers();
-
+          const token = `supabase-token.${btoa(JSON.stringify({ sub: user.id, role: user.role }))}`;
           const newState: AuthState = {
             isAuthenticated: true,
             currentUser: user,
@@ -153,60 +150,61 @@ export class AuthService {
           };
 
           this.authState$.next(newState);
+          sessionStorage.setItem('DAM2_AUTH_SESSION', JSON.stringify(newState));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
 
-          if (credentials.rememberMe !== false) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-          }
-
-          return { success: true, message: 'Autenticación correcta', user };
+          return { success: true, message: 'Autenticación con Supabase exitosa', user };
         }
 
-        return { success: false, message: 'Credenciales inválidas. Revisa tu correo o contraseña.' };
+        // BLOQUEO: Solo usuarios que existan en Supabase pueden entrar
+        return {
+          success: false,
+          message: sbRes.message || 'Solo los usuarios registrados en la base de datos de Supabase pueden iniciar sesión.'
+        };
       })
     );
   }
 
   /**
-   * Alta de nuevo usuario (Fase 1 - Paso 1.2)
+   * Alta de nuevo usuario en Supabase Auth y actualización de la tabla en base de datos
    */
   public register(dto: RegisterDto): Observable<{ success: boolean; message: string; user?: User }> {
-    return of(null).pipe(
-      delay(700),
-      map(() => {
-        const emailExists = this.registeredUsers.some(
-          u => u.email.toLowerCase() === dto.email.trim().toLowerCase()
-        );
+    return from(this.supabaseService.registerWithSupabase(dto)).pipe(
+      map((res) => {
+        if (res.success && res.user) {
+          const newUser: User = {
+            id: res.user.id,
+            email: res.user.email,
+            name: res.user.name,
+            role: res.user.role,
+            company: res.user.company,
+            dniCif: res.user.dniCif,
+            phone: res.user.phone,
+            createdAt: res.user.createdAt,
+            lastLogin: new Date().toISOString()
+          };
 
-        if (emailExists) {
-          return { success: false, message: 'El correo electrónico ya está registrado en el sistema.' };
+          this.registeredUsers.push(newUser);
+          this.persistUsers();
+
+          // Autentica al nuevo usuario con credenciales Supabase
+          const token = `supabase-jwt-token.${btoa(JSON.stringify({ sub: newUser.id, role: newUser.role }))}`;
+          const newState: AuthState = {
+            isAuthenticated: true,
+            currentUser: newUser,
+            token
+          };
+          this.authState$.next(newState);
+          sessionStorage.setItem('DAM2_AUTH_SESSION', JSON.stringify(newState));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+
+          return { success: true, message: res.message, user: newUser };
         }
 
-        const newUser: User = {
-          id: `usr-${Date.now()}`,
-          email: dto.email.trim().toLowerCase(),
-          name: dto.fullName.trim(),
-          role: dto.role,
-          company: dto.companyName.trim(),
-          dniCif: dto.dniCif.trim().toUpperCase(),
-          phone: dto.phone?.trim() ?? '',
-          createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString()
+        return {
+          success: false,
+          message: res.message || 'Error al crear el usuario en la base de datos de Supabase.'
         };
-
-        this.registeredUsers.push(newUser);
-        this.persistUsers();
-
-        // Autentica automáticamente al nuevo usuario
-        const token = `mock-jwt-token.${btoa(JSON.stringify({ sub: newUser.id, role: newUser.role }))}`;
-        const newState: AuthState = {
-          isAuthenticated: true,
-          currentUser: newUser,
-          token
-        };
-        this.authState$.next(newState);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-
-        return { success: true, message: 'Usuario registrado con éxito', user: newUser };
       })
     );
   }
@@ -244,6 +242,7 @@ export class AuthService {
    * Cierre de sesión y limpieza de tokens
    */
   public logout(): void {
+    sessionStorage.removeItem('DAM2_AUTH_SESSION');
     localStorage.removeItem(STORAGE_KEY);
     this.authState$.next({
       isAuthenticated: false,

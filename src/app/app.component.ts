@@ -19,7 +19,6 @@ import {
   IonMenuToggle,
   IonMenuButton,
   IonRouterOutlet,
-  IonAvatar,
   IonFooter,
   ModalController
 } from '@ionic/angular';
@@ -56,7 +55,6 @@ import { HelpModalComponent } from './shared/components/help-modal/help-modal.co
     IonMenuToggle,
     IonMenuButton,
     IonRouterOutlet,
-    IonAvatar,
     IonFooter
   ],
   templateUrl: 'app.component.html',

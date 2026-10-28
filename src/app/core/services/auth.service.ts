@@ -265,6 +265,7 @@ export class AuthService {
   public logout(): void {
     sessionStorage.removeItem('DAM2_AUTH_SESSION');
     localStorage.removeItem(STORAGE_KEY);
+    this.supabaseService.signOut();
     this.authState$.next({
       isAuthenticated: false,
       currentUser: null,

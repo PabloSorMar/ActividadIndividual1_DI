@@ -31,14 +31,14 @@
     </div>
   </div>
 
-  <!-- Estado de Carga -->
-  <div *ngIf="isLoading" class="loading-container" role="status" aria-live="polite">
+  <!-- Indicador sutil de sincronización en segundo plano (no bloqueante) -->
+  <div *ngIf="isLoading" class="sync-banner" role="status" aria-live="polite">
     <ion-spinner name="crescent" color="primary"></ion-spinner>
-    <p>Sincronizando inventario de productos, clientes y tickets...</p>
+    <span>Sincronizando datos con Supabase en tiempo real...</span>
   </div>
 
   <!-- ==================== PESTAÑA 1: CENTRO DE MANDO ==================== -->
-  <div *ngIf="!isLoading && activeAdminTab === 'dashboard'" class="dashboard-body">
+  <div *ngIf="activeAdminTab === 'dashboard'" class="dashboard-body">
     <!-- Tarjetas de Métricas Rápidas -->
     <ion-grid class="ion-no-padding stats-grid">
       <ion-row>
@@ -161,7 +161,7 @@
   </div>
 
   <!-- ==================== PESTAÑA 2: GESTIÓN (CLIENTES Y PRODUCTOS) ==================== -->
-  <div *ngIf="!isLoading && activeAdminTab === 'management'" class="tab-content management-view">
+  <div *ngIf="activeAdminTab === 'management'" class="tab-content management-view">
     <div class="sub-segment-wrapper">
       <ion-segment
         [value]="managementSubTab"

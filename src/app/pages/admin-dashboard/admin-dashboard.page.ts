@@ -1,7 +1,9 @@
 import {
   AfterViewInit,
+  ChangeDetectorRef,
   Component,
   ElementRef,
+  NgZone,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -30,9 +32,11 @@ import {
   IonInput,
   IonSelect,
   IonSelectOption,
-  ModalController
+  ModalController,
+  ViewWillEnter,
+  ViewDidEnter
 } from '@ionic/angular';
-import { forkJoin, Subscription } from 'rxjs';
+import { forkJoin, interval, Subscription } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 
 import { AuthService } from '../../core/services/auth.service';
@@ -90,7 +94,7 @@ Chart.register(...registerables);
   templateUrl: './admin-dashboard.page.html',
   styleUrls: ['./admin-dashboard.page.scss']
 })
-export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
+export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, ViewWillEnter, ViewDidEnter {
   @ViewChild('productStockCanvas') productStockCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('ticketPriorityCanvas') ticketPriorityCanvasRef!: ElementRef<HTMLCanvasElement>;
 
@@ -103,12 +107,15 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   public ticketService = inject(TicketService);
   private modalCtrl = inject(ModalController);
   private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
 
   // Pestañas principales requeridas: Centro de Mando y Gestión (Clientes / Productos)
   public activeAdminTab: 'dashboard' | 'management' = 'dashboard';
   public managementSubTab: 'products' | 'clients' = 'products';
 
-  public isLoading: boolean = true;
+  // Sincronización sin bloqueo para evitar pantalla congelada al entrar
+  public isLoading: boolean = false;
 
   // Datos del sistema
   public products: Product[] = [];
@@ -123,6 +130,8 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   // Suscripciones
   private ticketsSub?: Subscription;
   private logsSub?: Subscription;
+  private pollingSub?: Subscription;
+  private supabaseChannel?: any;
 
   // =================== MODALES Y FORMULARIOS ===================
   // 1. Añadir Producto
@@ -270,18 +279,31 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.loadAllData();
     this.subscribeToTickets();
     this.subscribeToRealtimeLogs();
+    this.setupRealtimeSubscriptions();
+  }
+
+  ionViewWillEnter(): void {
+    // Sincronización proactiva al volver/entrar a la página sin bloquear la interfaz
+    this.loadAllData();
+  }
+
+  ionViewDidEnter(): void {
+    if (this.activeAdminTab === 'dashboard') {
+      setTimeout(() => this.initDashboardCharts(), 60);
+    }
   }
 
   ngAfterViewInit(): void {
-    if (!this.isLoading && this.activeAdminTab === 'dashboard') {
-      this.initDashboardCharts();
+    if (this.activeAdminTab === 'dashboard') {
+      setTimeout(() => this.initDashboardCharts(), 60);
     }
   }
 
   public onTabChange(tab: any): void {
     this.activeAdminTab = tab;
+    this.cdr.detectChanges();
     if (tab === 'dashboard') {
-      setTimeout(() => this.initDashboardCharts(), 100);
+      setTimeout(() => this.initDashboardCharts(), 60);
     } else {
       this.loadProducts();
       this.loadClients();
@@ -290,6 +312,7 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
 
   public onManagementSubTabChange(subTab: any): void {
     this.managementSubTab = subTab;
+    this.cdr.detectChanges();
     if (subTab === 'products') {
       this.loadProducts();
     } else {
@@ -299,19 +322,29 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
 
   public async loadAllData(): Promise<void> {
     this.isLoading = true;
+    this.cdr.detectChanges();
     try {
       await Promise.all([this.loadProducts(), this.loadClients()]);
     } finally {
-      this.isLoading = false;
-      if (this.activeAdminTab === 'dashboard') {
-        setTimeout(() => this.initDashboardCharts(), 100);
-      }
+      this.ngZone.run(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+        if (this.activeAdminTab === 'dashboard') {
+          setTimeout(() => this.initDashboardCharts(), 60);
+        }
+      });
     }
   }
 
   public async loadProducts(): Promise<void> {
     try {
       this.products = await this.supabaseService.getProducts();
+      this.ngZone.run(() => {
+        this.cdr.detectChanges();
+        if (this.activeAdminTab === 'dashboard') {
+          this.updateProductStockChartRealtime();
+        }
+      });
     } catch (e: any) {
       console.warn('Error cargando productos de Supabase:', e);
     }
@@ -320,6 +353,9 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   public async loadClients(): Promise<void> {
     try {
       this.customers = await this.supabaseService.getClients();
+      this.ngZone.run(() => {
+        this.cdr.detectChanges();
+      });
     } catch (e: any) {
       console.warn('Error cargando clientes de Supabase:', e);
     }
@@ -328,147 +364,228 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private subscribeToTickets(): void {
     this.ticketsSub = this.ticketService.getTickets().subscribe(tickets => {
       this.tickets = tickets;
-      if (this.activeAdminTab === 'dashboard') {
-        setTimeout(() => this.initDashboardCharts(), 100);
-      }
+      this.ngZone.run(() => {
+        this.cdr.detectChanges();
+        if (this.activeAdminTab === 'dashboard') {
+          this.updateTicketPriorityChartRealtime();
+        }
+      });
     });
   }
 
   private subscribeToRealtimeLogs(): void {
     this.logsSub = this.realtimeDoc.logs$.subscribe(logs => {
       this.liveLogs = logs;
+      this.cdr.detectChanges();
     });
   }
 
-  // =================== GRÁFICOS CHART.JS ===================
-
-  private initDashboardCharts(): void {
-    // 1. Gráfico de Distribución de Productos en Cantidad
-    if (this.productStockCanvasRef?.nativeElement && this.products.length > 0) {
-      if (this.productStockChart) {
-        this.productStockChart.destroy();
+  private setupRealtimeSubscriptions(): void {
+    // 1. Canal Realtime Supabase para cambios en la tabla 'products'
+    try {
+      const sb = this.supabaseService.client;
+      if (sb) {
+        this.supabaseChannel = sb
+          .channel('public:products:dashboard-realtime')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'products' },
+            async () => {
+              await this.loadProducts();
+            }
+          )
+          .subscribe();
       }
+    } catch (err) {
+      console.warn('Supabase realtime channel no inicializado:', err);
+    }
 
-      const ctxStock = this.productStockCanvasRef.nativeElement.getContext('2d');
-      if (ctxStock) {
-        const labels = this.products.map(p => p.name.length > 20 ? p.name.substring(0, 18) + '...' : p.name);
-        const stockData = this.products.map(p => p.stock);
-        const colors = [
-          'rgba(56, 128, 255, 0.85)',
-          'rgba(16, 185, 129, 0.85)',
-          'rgba(245, 158, 11, 0.85)',
-          'rgba(139, 92, 246, 0.85)',
-          'rgba(236, 72, 153, 0.85)',
-          'rgba(6, 182, 212, 0.85)',
-          'rgba(239, 68, 68, 0.85)'
-        ];
+    // 2. Polling silencioso de respaldo cada 4 segundos para actualización en vivo garantizada
+    this.pollingSub = interval(4000).subscribe(async () => {
+      if (this.activeAdminTab === 'dashboard') {
+        try {
+          const fresh = await this.supabaseService.getProducts();
+          if (JSON.stringify(fresh) !== JSON.stringify(this.products)) {
+            this.products = fresh;
+            this.ngZone.run(() => {
+              this.cdr.detectChanges();
+              this.updateProductStockChartRealtime();
+            });
+          }
+        } catch {}
+      }
+    });
+  }
 
-        // Crear gradiente estilizado para el área
-        const gradient = ctxStock.createLinearGradient(0, 0, 0, 260);
-        gradient.addColorStop(0, 'rgba(56, 128, 255, 0.45)');
-        gradient.addColorStop(0.7, 'rgba(56, 128, 255, 0.12)');
-        gradient.addColorStop(1, 'rgba(56, 128, 255, 0.00)');
+  // =================== GRÁFICOS CHART.JS EN TIEMPO REAL ===================
 
-        this.productStockChart = new Chart(ctxStock, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [
-              {
-                label: 'Cantidad en Stock (uds)',
-                data: stockData,
-                borderColor: '#3880ff',
-                borderWidth: 3,
-                fill: true,
-                backgroundColor: gradient,
-                tension: 0.4,
-                pointBackgroundColor: '#3880ff',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
-                pointRadius: 6,
-                pointHoverRadius: 9,
-                pointHoverBackgroundColor: '#10b981',
-                pointHoverBorderColor: '#ffffff'
-              }
-            ]
+  public initDashboardCharts(): void {
+    this.initProductStockChart();
+    this.initTicketPriorityChart();
+  }
+
+  private initProductStockChart(): void {
+    if (!this.productStockCanvasRef?.nativeElement || this.products.length === 0) {
+      return;
+    }
+
+    if (this.productStockChart) {
+      this.productStockChart.destroy();
+      this.productStockChart = null;
+    }
+
+    const ctxStock = this.productStockCanvasRef.nativeElement.getContext('2d');
+    if (!ctxStock) return;
+
+    const labels = this.products.map(p => p.name.length > 20 ? p.name.substring(0, 18) + '...' : p.name);
+    const stockData = this.products.map(p => p.stock);
+
+    const gradient = ctxStock.createLinearGradient(0, 0, 0, 260);
+    gradient.addColorStop(0, 'rgba(56, 128, 255, 0.45)');
+    gradient.addColorStop(0.7, 'rgba(56, 128, 255, 0.12)');
+    gradient.addColorStop(1, 'rgba(56, 128, 255, 0.00)');
+
+    this.productStockChart = new Chart(ctxStock, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Cantidad en Stock (uds)',
+            data: stockData,
+            borderColor: '#3880ff',
+            borderWidth: 3,
+            fill: true,
+            backgroundColor: gradient,
+            tension: 0.4,
+            pointBackgroundColor: '#3880ff',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 6,
+            pointHoverRadius: 9,
+            pointHoverBackgroundColor: '#10b981',
+            pointHoverBorderColor: '#ffffff'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 500
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              boxWidth: 14,
+              padding: 8,
+              font: { weight: 600 }
+            }
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: true,
-                position: 'top',
-                labels: {
-                  boxWidth: 14,
-                  padding: 8,
-                  font: { weight: 600 }
-                }
-              },
-              tooltip: {
-                callbacks: {
-                  label: (item) => `Stock disponible: ${item.raw} unidades`
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.08)' },
-                ticks: { stepSize: 5 }
-              },
-              x: {
-                grid: { display: false },
-                ticks: { maxRotation: 25, minRotation: 0 }
-              }
+          tooltip: {
+            callbacks: {
+              label: (item) => `Stock disponible: ${item.raw} unidades`
             }
           }
-        });
-      }
-    }
-
-    // 2. Gráfico de Tickets por Prioridad
-    if (this.ticketPriorityCanvasRef?.nativeElement && this.tickets.length > 0) {
-      if (this.ticketPriorityChart) {
-        this.ticketPriorityChart.destroy();
-      }
-
-      const ctxTicket = this.ticketPriorityCanvasRef.nativeElement.getContext('2d');
-      if (ctxTicket) {
-        const priorityCounts = {
-          Urgente: this.tickets.filter(t => t.priority === 'urgente').length,
-          Alta: this.tickets.filter(t => t.priority === 'alta').length,
-          Media: this.tickets.filter(t => t.priority === 'media').length,
-          Baja: this.tickets.filter(t => t.priority === 'baja').length
-        };
-
-        this.ticketPriorityChart = new Chart(ctxTicket, {
-          type: 'doughnut',
-          data: {
-            labels: Object.keys(priorityCounts),
-            datasets: [
-              {
-                data: Object.values(priorityCounts),
-                backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#10b981'],
-                borderWidth: 2,
-                borderColor: '#1e293b'
-              }
-            ]
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.08)' },
+            ticks: { stepSize: 5 }
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'bottom',
-                labels: { boxWidth: 12, padding: 10 }
-              }
-            },
-            cutout: '65%'
+          x: {
+            grid: { display: false },
+            ticks: { maxRotation: 25, minRotation: 0 }
           }
-        });
+        }
       }
+    });
+  }
+
+  private updateProductStockChartRealtime(): void {
+    if (!this.productStockCanvasRef?.nativeElement) return;
+    if (!this.productStockChart) {
+      this.initProductStockChart();
+      return;
     }
+
+    const labels = this.products.map(p => p.name.length > 20 ? p.name.substring(0, 18) + '...' : p.name);
+    const stockData = this.products.map(p => p.stock);
+
+    this.productStockChart.data.labels = labels;
+    this.productStockChart.data.datasets[0].data = stockData;
+    this.productStockChart.update();
+  }
+
+  private initTicketPriorityChart(): void {
+    if (!this.ticketPriorityCanvasRef?.nativeElement || this.tickets.length === 0) {
+      return;
+    }
+
+    if (this.ticketPriorityChart) {
+      this.ticketPriorityChart.destroy();
+      this.ticketPriorityChart = null;
+    }
+
+    const ctxTicket = this.ticketPriorityCanvasRef.nativeElement.getContext('2d');
+    if (!ctxTicket) return;
+
+    const priorityCounts = [
+      this.tickets.filter(t => t.priority === 'urgente').length,
+      this.tickets.filter(t => t.priority === 'alta').length,
+      this.tickets.filter(t => t.priority === 'media').length,
+      this.tickets.filter(t => t.priority === 'baja').length
+    ];
+
+    this.ticketPriorityChart = new Chart(ctxTicket, {
+      type: 'doughnut',
+      data: {
+        labels: ['Urgente', 'Alta', 'Media', 'Baja'],
+        datasets: [
+          {
+            data: priorityCounts,
+            backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#10b981'],
+            borderWidth: 2,
+            borderColor: '#1e293b'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 500
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { boxWidth: 12, padding: 10 }
+          }
+        },
+        cutout: '65%'
+      }
+    });
+  }
+
+  private updateTicketPriorityChartRealtime(): void {
+    if (!this.ticketPriorityCanvasRef?.nativeElement) return;
+    if (!this.ticketPriorityChart) {
+      this.initTicketPriorityChart();
+      return;
+    }
+
+    const priorityCounts = [
+      this.tickets.filter(t => t.priority === 'urgente').length,
+      this.tickets.filter(t => t.priority === 'alta').length,
+      this.tickets.filter(t => t.priority === 'media').length,
+      this.tickets.filter(t => t.priority === 'baja').length
+    ];
+
+    this.ticketPriorityChart.data.datasets[0].data = priorityCounts;
+    this.ticketPriorityChart.update();
   }
 
   // =================== ACCIONES DE TICKETS ===================
@@ -939,6 +1056,12 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.ticketsSub) this.ticketsSub.unsubscribe();
     if (this.logsSub) this.logsSub.unsubscribe();
+    if (this.pollingSub) this.pollingSub.unsubscribe();
+    if (this.supabaseChannel) {
+      try {
+        this.supabaseService.client?.removeChannel(this.supabaseChannel);
+      } catch {}
+    }
     if (this.productStockChart) this.productStockChart.destroy();
     if (this.ticketPriorityChart) this.ticketPriorityChart.destroy();
   }

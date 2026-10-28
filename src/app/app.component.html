@@ -74,11 +74,21 @@
             <ion-badge slot="end" color="secondary">Guía</ion-badge>
           </ion-item>
 
-          <!-- Selector de Modo Oscuro / Claro -->
-          <ion-item (click)="toggleTheme()" button class="nav-item">
-            <ion-icon slot="start" [name]="isDarkMode ? 'sunny-outline' : 'moon-outline'"></ion-icon>
-            <ion-label>{{ isDarkMode ? 'Tema Claro' : 'Tema Oscuro' }}</ion-label>
-          </ion-item>
+          <!-- Selector de Modo Oscuro / Claro Estilizado -->
+          <div class="menu-theme-card" (click)="toggleTheme()" role="button" tabindex="0" [attr.aria-label]="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
+            <div class="theme-card-left">
+              <div class="theme-orb-icon" [class.is-dark]="isDarkMode">
+                <ion-icon [name]="isDarkMode ? 'moon' : 'sunny'"></ion-icon>
+              </div>
+              <div class="theme-card-texts">
+                <span class="theme-card-title">Tema Visual</span>
+                <span class="theme-card-sub">{{ isDarkMode ? 'Modo Oscuro (Activo)' : 'Modo Claro (Activo)' }}</span>
+              </div>
+            </div>
+            <div class="theme-switch-slider" [class.checked]="isDarkMode">
+              <div class="switch-handle"></div>
+            </div>
+          </div>
         </ion-list>
       </ion-content>
 
@@ -104,19 +114,28 @@
 
           <ion-title class="app-top-title">NovaGestión</ion-title>
 
-          <ion-buttons slot="end">
+          <ion-buttons slot="end" class="top-nav-actions">
             <!-- Botón de Ayuda Rápida -->
-            <ion-button (click)="openHelp()" aria-label="Abrir manual de usuario">
+            <ion-button (click)="openHelp()" aria-label="Abrir manual de usuario" class="header-icon-btn">
               <ion-icon slot="icon-only" name="help-circle-outline"></ion-icon>
             </ion-button>
 
-            <!-- Botón Cambio de Tema -->
-            <ion-button (click)="toggleTheme()" aria-label="Cambiar tema visual">
-              <ion-icon slot="icon-only" [name]="isDarkMode ? 'sunny-outline' : 'moon-outline'"></ion-icon>
-            </ion-button>
+            <!-- Botón de Cambio de Tema Estilizado Premium -->
+            <button
+              type="button"
+              class="theme-pill-btn"
+              (click)="toggleTheme()"
+              [attr.aria-label]="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+              [title]="isDarkMode ? 'Modo Oscuro activo (clic para cambiar a Claro)' : 'Modo Claro activo (clic para cambiar a Oscuro)'"
+            >
+              <div class="theme-icon-orb" [class.dark]="isDarkMode">
+                <ion-icon [name]="isDarkMode ? 'moon' : 'sunny'"></ion-icon>
+              </div>
+              <span class="theme-pill-label">{{ isDarkMode ? 'Oscuro' : 'Claro' }}</span>
+            </button>
 
             <!-- Botón de Salir -->
-            <ion-button (click)="logout()" aria-label="Cerrar sesión actual">
+            <ion-button (click)="logout()" aria-label="Cerrar sesión actual" class="header-icon-btn logout-header-btn">
               <ion-icon slot="icon-only" name="power-outline" color="danger"></ion-icon>
             </ion-button>
           </ion-buttons>

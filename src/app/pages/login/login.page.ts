@@ -12,7 +12,7 @@ import {
   IonSpinner,
   IonCard,
   IonCardContent,
-  IonBadge
+  ViewWillEnter
 } from '@ionic/angular';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -43,7 +43,7 @@ import { SupabaseService } from '../../core/services/supabase.service';
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss']
 })
-export class LoginPage {
+export class LoginPage implements ViewWillEnter {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
@@ -60,6 +60,18 @@ export class LoginPage {
   public isSubmitting: boolean = false;
   public errorMessage: string = '';
   public anonKeyInput: string = '';
+
+  ionViewWillEnter(): void {
+    // Al volver al login por cierre de sesión o redirección, se resetea todo estado previo
+    this.isSubmitting = false;
+    this.errorMessage = '';
+    this.loginForm.reset({
+      email: '',
+      password: '',
+      rememberMe: true
+    });
+    this.notificationService.dismissLoading();
+  }
 
   public saveKey(): void {
     if (this.anonKeyInput.trim()) {

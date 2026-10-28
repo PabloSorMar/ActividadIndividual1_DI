@@ -40,6 +40,29 @@ export class SupabaseService {
 
 
   /**
+   * Obtiene la instancia del cliente Supabase
+   */
+  public get client(): SupabaseClient | null {
+    return this.supabase;
+  }
+
+  /**
+   * Cierra la sesión activa en Supabase Auth y limpia señales
+   */
+  public async signOut(): Promise<void> {
+    try {
+      if (this.supabase) {
+        await this.supabase.auth.signOut();
+      }
+    } catch (e) {
+      console.warn('Error al cerrar sesión en Supabase:', e);
+    } finally {
+      this.currentUser.set(null);
+      this.userRole.set(null);
+    }
+  }
+
+  /**
    * Comprueba si el cliente Supabase tiene credenciales configuradas
    */
   public isConfigured(): boolean {

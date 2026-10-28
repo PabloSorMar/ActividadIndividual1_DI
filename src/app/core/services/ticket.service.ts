@@ -66,6 +66,13 @@ export class TicketService {
 
   constructor() {
     this.loadTickets();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (event) => {
+        if (event.key === TICKETS_STORAGE_KEY) {
+          this.loadTickets();
+        }
+      });
+    }
   }
 
   private loadTickets(): void {

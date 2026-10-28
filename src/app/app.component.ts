@@ -66,7 +66,7 @@ export class AppComponent implements OnInit {
   private notification = inject(NotificationService);
   private modalCtrl = inject(ModalController);
 
-  public isDarkMode: boolean = false;
+  public isDarkMode: boolean = true;
 
   ngOnInit(): void {
     this.initTheme();
@@ -77,9 +77,15 @@ export class AppComponent implements OnInit {
 
   private initTheme(): void {
     const saved = localStorage.getItem('novagestion_theme');
-    if (saved === 'dark') {
-      this.isDarkMode = true;
+    // Requerimiento: El tema inicial debe ser oscuro por defecto
+    const isDark = saved !== 'light';
+    this.isDarkMode = isDark;
+    if (isDark) {
       document.body.classList.add('ion-palette-dark');
+      document.documentElement.classList.add('dark');
+    } else {
+      document.body.classList.remove('ion-palette-dark');
+      document.documentElement.classList.remove('dark');
     }
   }
 
@@ -87,10 +93,12 @@ export class AppComponent implements OnInit {
     this.isDarkMode = !this.isDarkMode;
     if (this.isDarkMode) {
       document.body.classList.add('ion-palette-dark');
+      document.documentElement.classList.add('dark');
       localStorage.setItem('novagestion_theme', 'dark');
       this.notification.showToast('Modo oscuro activado', 'medium', 1500);
     } else {
       document.body.classList.remove('ion-palette-dark');
+      document.documentElement.classList.remove('dark');
       localStorage.setItem('novagestion_theme', 'light');
       this.notification.showToast('Modo claro activado', 'medium', 1500);
     }
@@ -103,13 +111,13 @@ export class AppComponent implements OnInit {
     await modal.present();
   }
 
-  public logout(): void {
-    this.notification.showConfirm('Cerrar Sesión', '¿Estás seguro de que deseas salir del sistema?').then(ok => {
-      if (ok) {
-        this.authService.logout();
-        this.router.navigate(['/login']);
-        this.notification.showToast('Sesión finalizada correctamente', 'medium');
-      }
-    });
+  public async logout(): Promise<void> {
+    const ok = await this.notification.showConfirm('Cerrar Sesión', '¿Estás seguro de que deseas salir del sistema?');
+    if (ok) {
+      await this.notification.dismissLoading();
+      this.authService.logout();
+      await this.router.navigate(['/login'], { replaceUrl: true });
+      this.notification.showToast('Sesión finalizada correctamente', 'medium');
+    }
   }
 }

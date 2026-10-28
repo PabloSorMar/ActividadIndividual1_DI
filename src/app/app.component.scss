@@ -154,4 +154,173 @@
       color: var(--ion-text-color, #0f172a);
     }
   }
+
+  .top-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 0.5rem;
+
+    .header-icon-btn {
+      --border-radius: 10px;
+      margin: 0;
+      transition: transform 0.15s ease;
+
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+  }
+
+  /* Botón de Tema Estilizado (Pill Moderno) */
+  .theme-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 3px 12px 3px 4px;
+    height: 34px;
+    border-radius: 9999px;
+    border: 1px solid rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.28);
+    background: rgba(var(--ion-color-step-100, 241, 245, 249), 0.85);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(56, 128, 255, 0.25);
+      border-color: var(--ion-color-primary, #3880ff);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    .theme-icon-orb {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      color: #78350f;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+
+      &.dark {
+        background: linear-gradient(135deg, #6366f1, #3b82f6);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.45);
+      }
+
+      ion-icon {
+        transition: transform 0.3s ease;
+      }
+    }
+
+    &:hover .theme-icon-orb ion-icon {
+      transform: rotate(20deg);
+    }
+
+    .theme-pill-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: var(--ion-text-color, #1e293b);
+      user-select: none;
+    }
+  }
 }
+
+/* Tarjeta de Tema en Menú Lateral */
+.menu-theme-card {
+  margin: 0.5rem 0.25rem 0.25rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.04);
+  border: 1px solid rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &:hover {
+    background: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.08);
+    border-color: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.3);
+  }
+
+  .theme-card-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .theme-orb-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+
+      &.is-dark {
+        background: rgba(99, 102, 241, 0.2);
+        color: #818cf8;
+      }
+    }
+
+    .theme-card-texts {
+      display: flex;
+      flex-direction: column;
+
+      .theme-card-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--ion-text-color, #1e293b);
+      }
+
+      .theme-card-sub {
+        font-size: 0.72rem;
+        color: var(--ion-color-step-500, #64748b);
+      }
+    }
+  }
+
+  .theme-switch-slider {
+    width: 42px;
+    height: 24px;
+    border-radius: 12px;
+    background: rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.2);
+    position: relative;
+    transition: background 0.3s ease;
+
+    .switch-handle {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ffffff;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    &.checked {
+      background: var(--ion-color-primary, #3880ff);
+
+      .switch-handle {
+        transform: translateX(18px);
+      }
+    }
+  }
+}
+

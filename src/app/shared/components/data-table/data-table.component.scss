@@ -173,6 +173,21 @@
           --padding-end: 6px;
           height: 32px;
           margin: 0;
+
+          &.action-btn-with-label {
+            --padding-start: 12px;
+            --padding-end: 12px;
+            --border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+            .action-btn-text {
+              margin-left: 4px;
+              white-space: nowrap;
+            }
+          }
         }
       }
     }

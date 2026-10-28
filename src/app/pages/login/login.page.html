@@ -32,6 +32,47 @@
           </div>
         </div>
 
+        <!-- Botones de Acceso Rápido (Requerimiento: Admin y User con 1 clic) -->
+        <div class="quick-access-box">
+          <div class="quick-title">
+            <ion-icon name="flash-outline"></ion-icon>
+            <span>Acceso Rápido de Evaluación (1 Clic)</span>
+          </div>
+          <div class="quick-buttons-grid">
+            <ion-button
+              type="button"
+              color="danger"
+              class="quick-login-btn admin-badge-btn"
+              (click)="quickLogin('admin')"
+              [disabled]="isSubmitting"
+            >
+              <ion-icon name="shield-checkmark-outline" slot="start"></ion-icon>
+              <div class="quick-btn-labels">
+                <span class="btn-main-label">Acceso Administrador</span>
+                <span class="btn-sub-label">admin@gmail.com • 123456</span>
+              </div>
+            </ion-button>
+
+            <ion-button
+              type="button"
+              color="primary"
+              class="quick-login-btn user-badge-btn"
+              (click)="quickLogin('user')"
+              [disabled]="isSubmitting"
+            >
+              <ion-icon name="person-outline" slot="start"></ion-icon>
+              <div class="quick-btn-labels">
+                <span class="btn-main-label">Acceso Usuario Estándar</span>
+                <span class="btn-sub-label">user@gmail.com • 123456</span>
+              </div>
+            </ion-button>
+          </div>
+        </div>
+
+        <div class="divider-line">
+          <span>O introduce tus credenciales manualmente</span>
+        </div>
+
         <!-- Mensaje de Error Accesible -->
         <div *ngIf="errorMessage" class="error-banner" role="alert" aria-live="assertive">
           <ion-icon name="alert-circle-outline"></ion-icon>

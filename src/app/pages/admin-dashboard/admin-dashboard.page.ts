@@ -41,19 +41,21 @@ import { RealtimeDocService } from '../../core/services/realtime-doc.service';
 import { ReportExportService } from '../../core/services/report-export.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SupabaseService } from '../../core/services/supabase.service';
+import { TicketService } from '../../core/services/ticket.service';
 import { AuditLog, Customer, DashboardMetrics, Invoice } from '../../core/models/business.models';
 import { Product } from '../../core/models/product.model';
+import { Ticket, TicketPriority, TicketStatus } from '../../core/models/ticket.model';
 import { TableAction, TableActionEvent, TableColumn } from '../../core/models/component.models';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { HelpModalComponent } from '../../shared/components/help-modal/help-modal.component';
 
-import { environment } from '../../../environments/environment';
-
 Chart.register(...registerables);
 
 /**
- * Cuadro de Mando del Administrador con Pestañas de Centro de Mando, Clientes y Productos (Supabase).
+ * Cuadro de Mando del Administrador:
+ * - Pestaña 1 "Centro de Mando": Distribución de productos en cantidad y tickets creados por usuarios (razón y prioridad).
+ * - Pestaña 2 "Gestión de Clientes y Productos": Modificación integral (alta, edición, baja) en Supabase.
  */
 @Component({
   selector: 'app-admin-dashboard',
@@ -89,8 +91,8 @@ Chart.register(...registerables);
   styleUrls: ['./admin-dashboard.page.scss']
 })
 export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('revenueChartCanvas') revenueCanvasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('statusChartCanvas') statusCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('productStockCanvas') productStockCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('ticketPriorityCanvas') ticketPriorityCanvasRef!: ElementRef<HTMLCanvasElement>;
 
   public authService = inject(AuthService);
   private sqlDb = inject(SqlDatabaseService);
@@ -98,23 +100,32 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   private exportService = inject(ReportExportService);
   private notificationService = inject(NotificationService);
   public supabaseService = inject(SupabaseService);
+  public ticketService = inject(TicketService);
   private modalCtrl = inject(ModalController);
   private fb = inject(FormBuilder);
 
-  // Pestañas principales requeridas: Cuadro de Mando, Clientes y Productos
-  public activeAdminTab: 'dashboard' | 'clients' | 'products' = 'dashboard';
+  // Pestañas principales requeridas: Centro de Mando y Gestión (Clientes / Productos)
+  public activeAdminTab: 'dashboard' | 'management' = 'dashboard';
+  public managementSubTab: 'products' | 'clients' = 'products';
 
   public isLoading: boolean = true;
-  public selectedFilter: 'all' | 'year' | 'month' = 'all';
 
-  // Datos consolidados
-  public metrics: DashboardMetrics | null = null;
-  public invoices: Invoice[] = [];
-  public customers: Customer[] = [];
+  // Datos del sistema
   public products: Product[] = [];
+  public customers: any[] = [];
+  public tickets: Ticket[] = [];
   public liveLogs: AuditLog[] = [];
 
-  // Modal para Añadir Producto
+  // Instancias de Chart.js
+  private productStockChart: Chart | null = null;
+  private ticketPriorityChart: Chart | null = null;
+
+  // Suscripciones
+  private ticketsSub?: Subscription;
+  private logsSub?: Subscription;
+
+  // =================== MODALES Y FORMULARIOS ===================
+  // 1. Añadir Producto
   public isProductModalOpen: boolean = false;
   public productForm: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
@@ -124,55 +135,18 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     description: ['']
   });
 
-  // Instancias de Chart.js
-  private revenueChart: Chart | null = null;
-  private statusChart: Chart | null = null;
+  // 2. Modificar Producto
+  public isEditProductModalOpen: boolean = false;
+  public selectedProduct: Product | null = null;
+  public editProductForm: FormGroup = this.fb.group({
+    name: ['', [Validators.required, Validators.minLength(3)]],
+    category: ['Hardware', [Validators.required]],
+    price: [0, [Validators.required, Validators.min(0.01)]],
+    stock: [0, [Validators.required, Validators.min(0)]],
+    description: ['']
+  });
 
-  // Suscripciones
-  private dataSub?: Subscription;
-  private logsSub?: Subscription;
-
-  // Columnas para Facturas
-  public invoiceColumns: TableColumn<Invoice>[] = [
-    { key: 'invoiceNumber', header: 'Nº Factura', sortable: true, width: '130px' },
-    { key: 'customerName', header: 'Cliente / Empresa', sortable: true },
-    { key: 'date', header: 'Emisión', sortable: true, type: 'date', width: '110px' },
-    { key: 'dueDate', header: 'Vencimiento', sortable: true, type: 'date', width: '110px' },
-    { key: 'amount', header: 'Importe', sortable: true, type: 'currency', align: 'right', width: '120px' },
-    {
-      key: 'status',
-      header: 'Estado',
-      sortable: true,
-      type: 'badge',
-      align: 'center',
-      width: '110px',
-      badgeColorMap: {
-        pagada: 'success',
-        pendiente: 'warning',
-        vencida: 'danger',
-        anulada: 'medium'
-      }
-    }
-  ];
-
-  public invoiceActions: TableAction<Invoice>[] = [
-    { id: 'view', label: 'Ver detalles', icon: 'eye-outline', color: 'primary' },
-    { id: 'toggle-status', label: 'Cambiar estado', icon: 'swap-horizontal-outline', color: 'secondary' }
-  ];
-
-  // Columnas para Clientes (Pestaña Clientes de Supabase)
-  public customerColumns: TableColumn<any>[] = [
-    { key: 'nombre', header: 'Cliente / Nombre', sortable: true },
-    { key: 'empresa', header: 'Empresa / Razón Social', sortable: true },
-    { key: 'email', header: 'Correo Electrónico', sortable: true },
-    { key: 'created_at', header: 'Fecha Alta', sortable: true, type: 'date', width: '130px' }
-  ];
-
-  public customerActions: TableAction<any>[] = [
-    { id: 'delete', label: 'Eliminar de Supabase', icon: 'trash-outline', color: 'danger' }
-  ];
-
-  // Modal para Añadir Cliente a Supabase
+  // 3. Añadir Cliente
   public isClientModalOpen: boolean = false;
   public clientForm: FormGroup = this.fb.group({
     nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -180,114 +154,150 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     email: ['', [Validators.required, Validators.email]]
   });
 
-  // Columnas para Productos (Pestaña Productos de Supabase)
+  // 4. Modificar Cliente
+  public isEditClientModalOpen: boolean = false;
+  public selectedClient: any = null;
+  public editClientForm: FormGroup = this.fb.group({
+    nombre: ['', [Validators.required, Validators.minLength(3)]],
+    empresa: ['', [Validators.required, Validators.minLength(2)]],
+    email: ['', [Validators.required, Validators.email]]
+  });
+
+  // =================== TABLAS Y COLUMNAS ===================
+
+  // 1. Tabla de Tickets (Centro de Mando)
+  public ticketColumns: TableColumn<Ticket>[] = [
+    { key: 'reason', header: 'Motivo / Razón del Ticket', sortable: true },
+    {
+      key: 'priority',
+      header: 'Prioridad',
+      sortable: true,
+      type: 'badge',
+      align: 'center',
+      width: '120px',
+      badgeColorMap: {
+        urgente: 'danger',
+        alta: 'warning',
+        media: 'primary',
+        baja: 'success'
+      }
+    },
+    { key: 'userName', header: 'Usuario Solicitante', sortable: true, width: '160px' },
+    { key: 'userEmail', header: 'Email Contacto', width: '180px' },
+    { key: 'createdAt', header: 'Fecha Creación', sortable: true, width: '140px' },
+    {
+      key: 'status',
+      header: 'Estado',
+      sortable: true,
+      type: 'badge',
+      align: 'center',
+      width: '120px',
+      badgeColorMap: {
+        abierto: 'danger',
+        en_proceso: 'warning',
+        resuelto: 'success'
+      }
+    }
+  ];
+
+  public ticketActions: TableAction<Ticket>[] = [
+    {
+      id: 'toggle-status',
+      label: 'Cambiar Estado',
+      icon: 'sync-outline',
+      color: 'warning',
+      fill: 'solid',
+      showLabel: true
+    }
+  ];
+
+  // 2. Tabla de Productos (Gestión)
   public productColumns: TableColumn<Product>[] = [
     { key: 'name', header: 'Nombre del Producto', sortable: true },
-    { key: 'description', header: 'Descripción', sortable: true },
-    { key: 'price', header: 'Precio Unitario', sortable: true, type: 'currency', align: 'right', width: '140px' },
-    { key: 'stock', header: 'Stock en Almacén', sortable: true, align: 'center', width: '140px' },
-    { key: 'created_at', header: 'Fecha Alta', sortable: true, type: 'date', width: '120px' }
+    { key: 'description', header: 'Descripción' },
+    { key: 'price', header: 'Precio Unitario', sortable: true, type: 'currency', align: 'right', width: '130px' },
+    { key: 'stock', header: 'Cantidad en Stock', sortable: true, align: 'center', width: '140px' },
+    { key: 'category', header: 'Categoría', sortable: true, width: '120px' }
   ];
 
   public productActions: TableAction<Product>[] = [
+    { id: 'edit', label: 'Modificar Producto', icon: 'create-outline', color: 'primary' },
     { id: 'delete', label: 'Eliminar de Supabase', icon: 'trash-outline', color: 'danger' }
   ];
 
-  // Alias para compatibilidad de plantilla
-  public get tableColumns(): TableColumn<Invoice>[] {
-    return this.invoiceColumns;
-  }
-  public get tableActions(): TableAction<Invoice>[] {
-    return this.invoiceActions;
+  // 3. Tabla de Clientes (Gestión)
+  public customerColumns: TableColumn<any>[] = [
+    { key: 'nombre', header: 'Nombre / Contacto', sortable: true },
+    { key: 'empresa', header: 'Empresa / Razón Social', sortable: true },
+    { key: 'email', header: 'Correo Electrónico', sortable: true },
+    { key: 'created_at', header: 'Fecha de Alta', sortable: true, type: 'date', width: '130px' }
+  ];
+
+  public customerActions: TableAction<any>[] = [
+    { id: 'edit', label: 'Modificar Cliente', icon: 'create-outline', color: 'primary' },
+    { id: 'delete', label: 'Eliminar de Supabase', icon: 'trash-outline', color: 'danger' }
+  ];
+
+  // =================== GETTERS COMPUTADOS ===================
+
+  public get totalProductStock(): number {
+    return this.products.reduce((acc, p) => acc + (p.stock || 0), 0);
   }
 
-  // Modal para Configurar Clave Supabase en caliente
-  public isKeyModalOpen: boolean = false;
-  public tempAnonKey: string = environment.supabaseKey !== 'TU_SUPABASE_ANON_KEY' ? environment.supabaseKey : '';
-
-  public openKeyModal(): void {
-    this.tempAnonKey = environment.supabaseKey !== 'TU_SUPABASE_ANON_KEY' ? environment.supabaseKey : '';
-    this.isKeyModalOpen = true;
+  public get openTicketCount(): number {
+    return this.tickets.filter(t => t.status !== 'resuelto').length;
   }
 
-  public async saveAnonKey(): Promise<void> {
-    if (this.tempAnonKey.trim()) {
-      this.supabaseService.setAnonKey(this.tempAnonKey.trim());
-      this.isKeyModalOpen = false;
-      this.notificationService.showToast('Clave anon de Supabase configurada con éxito', 'success');
-      await this.loadProducts();
-      await this.loadClients();
-    }
+  public get urgentTicketCount(): number {
+    return this.tickets.filter(t => t.priority === 'urgente' || t.priority === 'alta').length;
   }
+
+  public get resolvedTicketCount(): number {
+    return this.tickets.filter(t => t.status === 'resuelto').length;
+  }
+
+  // =================== CICLO DE VIDA ===================
 
   ngOnInit(): void {
-    this.loadData();
-    this.loadProducts();
-    this.loadClients();
+    this.loadAllData();
+    this.subscribeToTickets();
     this.subscribeToRealtimeLogs();
   }
 
   ngAfterViewInit(): void {
-    if (!this.isLoading && this.metrics && this.activeAdminTab === 'dashboard') {
-      this.initCharts();
+    if (!this.isLoading && this.activeAdminTab === 'dashboard') {
+      this.initDashboardCharts();
     }
   }
 
   public onTabChange(tab: any): void {
-    if (tab === 'dashboard' || tab === 'clients' || tab === 'products') {
-      this.activeAdminTab = tab;
-      if (tab === 'dashboard') {
-        setTimeout(() => this.initCharts(), 80);
-      } else if (tab === 'products') {
-        this.loadProducts();
-      } else if (tab === 'clients') {
-        this.loadClients();
-      }
+    this.activeAdminTab = tab;
+    if (tab === 'dashboard') {
+      setTimeout(() => this.initDashboardCharts(), 100);
+    } else {
+      this.loadProducts();
+      this.loadClients();
     }
   }
 
-  public loadData(): void {
+  public onManagementSubTabChange(subTab: any): void {
+    this.managementSubTab = subTab;
+    if (subTab === 'products') {
+      this.loadProducts();
+    } else {
+      this.loadClients();
+    }
+  }
+
+  public async loadAllData(): Promise<void> {
     this.isLoading = true;
-
-    if (this.dataSub) {
-      this.dataSub.unsubscribe();
-    }
-
-    this.dataSub = forkJoin({
-      metrics: this.sqlDb.getDashboardMetrics(this.selectedFilter),
-      invoices: this.sqlDb.getInvoices()
-    }).subscribe({
-      next: (result) => {
-        this.metrics = result.metrics;
-        this.invoices = result.invoices;
-        if (this.metrics && this.customers) {
-          this.metrics.activeCustomers = this.customers.length;
-        }
-        this.isLoading = false;
-
-        if (this.activeAdminTab === 'dashboard') {
-          setTimeout(() => {
-            this.initCharts();
-          }, 80);
-        }
-      },
-      error: () => {
-        this.isLoading = false;
-        this.notificationService.showToast('Error al orquestar la carga de fuentes de datos', 'danger');
-      }
-    });
-
-    this.loadClients();
-  }
-
-  public async loadClients(): Promise<void> {
     try {
-      this.customers = await this.supabaseService.getClients();
-      if (this.metrics) {
-        this.metrics.activeCustomers = this.customers.length;
+      await Promise.all([this.loadProducts(), this.loadClients()]);
+    } finally {
+      this.isLoading = false;
+      if (this.activeAdminTab === 'dashboard') {
+        setTimeout(() => this.initDashboardCharts(), 100);
       }
-    } catch (e: any) {
-      console.warn('Error cargando clientes de Supabase:', e);
     }
   }
 
@@ -295,8 +305,25 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     try {
       this.products = await this.supabaseService.getProducts();
     } catch (e: any) {
-      console.warn('Error cargando productos:', e);
+      console.warn('Error cargando productos de Supabase:', e);
     }
+  }
+
+  public async loadClients(): Promise<void> {
+    try {
+      this.customers = await this.supabaseService.getClients();
+    } catch (e: any) {
+      console.warn('Error cargando clientes de Supabase:', e);
+    }
+  }
+
+  private subscribeToTickets(): void {
+    this.ticketsSub = this.ticketService.getTickets().subscribe(tickets => {
+      this.tickets = tickets;
+      if (this.activeAdminTab === 'dashboard') {
+        setTimeout(() => this.initDashboardCharts(), 100);
+      }
+    });
   }
 
   private subscribeToRealtimeLogs(): void {
@@ -305,16 +332,168 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  public onFilterChange(event: any): void {
-    this.selectedFilter = event.detail.value;
-    this.loadData();
-    this.realtimeDoc.addLog(
-      'Filtro Aplicado',
-      `Cuadro de mando filtrado por rango: ${this.selectedFilter.toUpperCase()}`,
-      'info',
-      this.authService.getCurrentUser()?.name || 'Admin',
-      'admin'
-    );
+  // =================== GRÁFICOS CHART.JS ===================
+
+  private initDashboardCharts(): void {
+    // 1. Gráfico de Distribución de Productos en Cantidad
+    if (this.productStockCanvasRef?.nativeElement && this.products.length > 0) {
+      if (this.productStockChart) {
+        this.productStockChart.destroy();
+      }
+
+      const ctxStock = this.productStockCanvasRef.nativeElement.getContext('2d');
+      if (ctxStock) {
+        const labels = this.products.map(p => p.name.length > 20 ? p.name.substring(0, 18) + '...' : p.name);
+        const stockData = this.products.map(p => p.stock);
+        const colors = [
+          'rgba(56, 128, 255, 0.85)',
+          'rgba(16, 185, 129, 0.85)',
+          'rgba(245, 158, 11, 0.85)',
+          'rgba(139, 92, 246, 0.85)',
+          'rgba(236, 72, 153, 0.85)',
+          'rgba(6, 182, 212, 0.85)',
+          'rgba(239, 68, 68, 0.85)'
+        ];
+
+        // Crear gradiente estilizado para el área
+        const gradient = ctxStock.createLinearGradient(0, 0, 0, 260);
+        gradient.addColorStop(0, 'rgba(56, 128, 255, 0.45)');
+        gradient.addColorStop(0.7, 'rgba(56, 128, 255, 0.12)');
+        gradient.addColorStop(1, 'rgba(56, 128, 255, 0.00)');
+
+        this.productStockChart = new Chart(ctxStock, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Cantidad en Stock (uds)',
+                data: stockData,
+                borderColor: '#3880ff',
+                borderWidth: 3,
+                fill: true,
+                backgroundColor: gradient,
+                tension: 0.4,
+                pointBackgroundColor: '#3880ff',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 9,
+                pointHoverBackgroundColor: '#10b981',
+                pointHoverBorderColor: '#ffffff'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  boxWidth: 14,
+                  padding: 8,
+                  font: { weight: 600 }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (item) => `Stock disponible: ${item.raw} unidades`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                ticks: { stepSize: 5 }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { maxRotation: 25, minRotation: 0 }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 2. Gráfico de Tickets por Prioridad
+    if (this.ticketPriorityCanvasRef?.nativeElement && this.tickets.length > 0) {
+      if (this.ticketPriorityChart) {
+        this.ticketPriorityChart.destroy();
+      }
+
+      const ctxTicket = this.ticketPriorityCanvasRef.nativeElement.getContext('2d');
+      if (ctxTicket) {
+        const priorityCounts = {
+          Urgente: this.tickets.filter(t => t.priority === 'urgente').length,
+          Alta: this.tickets.filter(t => t.priority === 'alta').length,
+          Media: this.tickets.filter(t => t.priority === 'media').length,
+          Baja: this.tickets.filter(t => t.priority === 'baja').length
+        };
+
+        this.ticketPriorityChart = new Chart(ctxTicket, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(priorityCounts),
+            datasets: [
+              {
+                data: Object.values(priorityCounts),
+                backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#10b981'],
+                borderWidth: 2,
+                borderColor: '#1e293b'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { boxWidth: 12, padding: 10 }
+              }
+            },
+            cutout: '65%'
+          }
+        });
+      }
+    }
+  }
+
+  // =================== ACCIONES DE TICKETS ===================
+
+  public onTicketAction(event: TableActionEvent<Ticket>): void {
+    const t = event.row;
+    if (event.action === 'toggle-status' || event.action === 'cycle-status') {
+      // Rotación secuencial: Abierto -> En Proceso -> Resuelto -> Abierto
+      let nextStatus: TicketStatus;
+      let toastColor: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' = 'primary';
+      let statusLabel = '';
+
+      if (t.status === 'abierto') {
+        nextStatus = 'en_proceso';
+        toastColor = 'warning';
+        statusLabel = 'EN PROCESO';
+      } else if (t.status === 'en_proceso') {
+        nextStatus = 'resuelto';
+        toastColor = 'success';
+        statusLabel = 'RESUELTO';
+      } else {
+        nextStatus = 'abierto';
+        toastColor = 'danger';
+        statusLabel = 'ABIERTO';
+      }
+
+      this.ticketService.updateTicketStatus(t.id, nextStatus).subscribe(() => {
+        this.notificationService.showToast(
+          `Estado de incidencia ${t.id} cambiado a "${statusLabel}"`,
+          toastColor
+        );
+      });
+    }
   }
 
   // =================== GESTIÓN DE PRODUCTOS (SUPABASE) ===================
@@ -353,16 +532,60 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
       await this.loadProducts();
 
       this.notificationService.showToast(`Producto "${added.name}" guardado en Supabase`, 'success');
-      this.realtimeDoc.addLog('Producto Supabase', `Añadido: ${added.name} (${added.price} €)`, 'success');
+      this.realtimeDoc.addLog('Producto Supabase', `Añadido: ${added.name} (Stock: ${added.stock})`, 'success');
     } catch (e: any) {
       await this.notificationService.dismissLoading();
       this.notificationService.showToast('Error guardando en Supabase: ' + e?.message, 'danger');
     }
   }
 
+  public openEditProductModal(prod: Product): void {
+    this.selectedProduct = prod;
+    this.editProductForm.patchValue({
+      name: prod.name,
+      category: prod.category || 'Hardware',
+      price: prod.price,
+      stock: prod.stock,
+      description: prod.description || ''
+    });
+    this.isEditProductModalOpen = true;
+  }
+
+  public async saveEditProduct(): Promise<void> {
+    if (this.editProductForm.invalid || !this.selectedProduct?.id) {
+      this.editProductForm.markAllAsTouched();
+      return;
+    }
+
+    const val = this.editProductForm.value;
+    await this.notificationService.showLoading('Modificando producto en Supabase...');
+
+    try {
+      await this.supabaseService.updateProduct(this.selectedProduct.id, {
+        name: val.name,
+        category: val.category,
+        price: Number(val.price),
+        stock: Number(val.stock),
+        description: val.description || ''
+      });
+
+      await this.notificationService.dismissLoading();
+      this.isEditProductModalOpen = false;
+      await this.loadProducts();
+
+      this.notificationService.showToast(`Producto "${val.name}" modificado con éxito en Supabase`, 'success');
+      this.realtimeDoc.addLog('Producto Supabase', `Modificado: ${val.name} (Stock: ${val.stock})`, 'info');
+    } catch (e: any) {
+      await this.notificationService.dismissLoading();
+      this.notificationService.showToast('Error al modificar en Supabase: ' + e?.message, 'danger');
+    }
+  }
+
   public async onProductAction(event: TableActionEvent<Product>): Promise<void> {
     const prod = event.row;
-    if (event.action === 'delete' && prod.id) {
+    if (event.action === 'edit') {
+      this.openEditProductModal(prod);
+    } else if (event.action === 'delete' && prod.id) {
       const ok = await this.notificationService.showConfirm(
         'Eliminar Producto',
         `¿Deseas eliminar "${prod.name}" de la base de datos de Supabase?`
@@ -421,9 +644,49 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  public openEditClientModal(client: any): void {
+    this.selectedClient = client;
+    this.editClientForm.patchValue({
+      nombre: client.nombre,
+      empresa: client.empresa,
+      email: client.email
+    });
+    this.isEditClientModalOpen = true;
+  }
+
+  public async saveEditClient(): Promise<void> {
+    if (this.editClientForm.invalid || !this.selectedClient?.id) {
+      this.editClientForm.markAllAsTouched();
+      return;
+    }
+
+    const val = this.editClientForm.value;
+    await this.notificationService.showLoading('Modificando cliente en Supabase...');
+
+    try {
+      await this.supabaseService.updateClient(this.selectedClient.id, {
+        nombre: val.nombre,
+        empresa: val.empresa,
+        email: val.email
+      });
+
+      await this.notificationService.dismissLoading();
+      this.isEditClientModalOpen = false;
+      await this.loadClients();
+
+      this.notificationService.showToast(`Cliente "${val.nombre}" modificado con éxito en Supabase`, 'success');
+      this.realtimeDoc.addLog('Cliente Supabase', `Modificado: ${val.nombre}`, 'info');
+    } catch (e: any) {
+      await this.notificationService.dismissLoading();
+      this.notificationService.showToast('Error al modificar en Supabase: ' + e?.message, 'danger');
+    }
+  }
+
   public async onClientAction(event: TableActionEvent<any>): Promise<void> {
     const cl = event.row;
-    if (event.action === 'delete' && cl.id) {
+    if (event.action === 'edit') {
+      this.openEditClientModal(cl);
+    } else if (event.action === 'delete' && cl.id) {
       const ok = await this.notificationService.showConfirm(
         'Eliminar Cliente',
         `¿Deseas eliminar a "${cl.nombre}" de la base de datos de Supabase?`
@@ -445,234 +708,38 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // =================== GRÁFICOS CHART.JS ===================
-
-  private initCharts(): void {
-    if (!this.metrics) return;
-
-    if (this.revenueCanvasRef?.nativeElement) {
-      if (this.revenueChart) {
-        this.revenueChart.destroy();
-      }
-
-      const ctxRev = this.revenueCanvasRef.nativeElement.getContext('2d');
-      if (ctxRev) {
-        this.revenueChart = new Chart(ctxRev, {
-          type: 'bar',
-          data: {
-            labels: this.metrics.monthlyRevenue.map(m => m.month),
-            datasets: [
-              {
-                label: 'Facturación Real (€)',
-                data: this.metrics.monthlyRevenue.map(m => m.amount),
-                backgroundColor: 'rgba(37, 99, 235, 0.85)',
-                borderRadius: 8,
-                borderSkipped: false
-              },
-              {
-                label: 'Objetivo (€)',
-                data: this.metrics.monthlyRevenue.map(m => m.target),
-                type: 'line',
-                borderColor: '#059669',
-                borderWidth: 2,
-                pointBackgroundColor: '#059669',
-                tension: 0.3
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'top', labels: { boxWidth: 12, font: { family: 'inherit', size: 11 } } },
-              tooltip: {
-                callbacks: {
-                  label: (item) => `${item.dataset.label}: ${Number(item.raw).toLocaleString('es-ES')} €`
-                }
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { color: 'rgba(0,0,0,0.05)' },
-                ticks: {
-                  callback: (val) => `${Number(val) / 1000}k €`,
-                  font: { size: 10 }
-                }
-              },
-              x: {
-                grid: { display: false }
-              }
-            }
-          }
-        });
-      }
-    }
-
-    if (this.statusCanvasRef?.nativeElement) {
-      if (this.statusChart) {
-        this.statusChart.destroy();
-      }
-
-      const ctxStatus = this.statusCanvasRef.nativeElement.getContext('2d');
-      if (ctxStatus) {
-        const labels = this.metrics.invoicesByStatus.map(s => s.status.toUpperCase());
-        const counts = this.metrics.invoicesByStatus.map(s => s.count);
-
-        this.statusChart = new Chart(ctxStatus, {
-          type: 'doughnut',
-          data: {
-            labels,
-            datasets: [
-              {
-                data: counts,
-                backgroundColor: ['#059669', '#d97706', '#dc2626', '#94a3b8'],
-                borderWidth: 2,
-                hoverOffset: 6
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'right',
-                labels: { boxWidth: 12, font: { size: 11 } }
-              }
-            },
-            cutout: '68%'
-          }
-        });
-      }
-    }
-  }
-
   // =================== EXPORTACIÓN ===================
 
-  public exportCsv(): void {
-    if (this.activeAdminTab === 'products') {
-      this.exportService.exportToCsv(
-        `Productos_Supabase_${new Date().toISOString().split('T')[0]}`,
-        this.products,
-        [
-          { key: 'name', header: 'Nombre' },
-          { key: 'category', header: 'Categoria' },
-          { key: 'price', header: 'Precio' },
-          { key: 'stock', header: 'Stock' },
-          { key: 'description', header: 'Descripcion' }
-        ]
-      );
-    } else if (this.activeAdminTab === 'clients') {
-      this.exportService.exportToCsv(
-        `Clientes_${new Date().toISOString().split('T')[0]}`,
-        this.customers,
-        [
-          { key: 'name', header: 'Cliente' },
-          { key: 'cif', header: 'CIF' },
-          { key: 'email', header: 'Email' },
-          { key: 'phone', header: 'Telefono' },
-          { key: 'totalSpent', header: 'GastoTotal' },
-          { key: 'status', header: 'Estado' }
-        ]
-      );
-    } else {
-      this.exportService.exportToCsv(
-        `Informe_Facturas_${new Date().toISOString().split('T')[0]}`,
-        this.invoices,
-        [
-          { key: 'invoiceNumber', header: 'Nº Factura' },
-          { key: 'customerName', header: 'Cliente' },
-          { key: 'date', header: 'Fecha Emisión' },
-          { key: 'dueDate', header: 'Fecha Vencimiento' },
-          { key: 'amount', header: 'Importe (€)' },
-          { key: 'status', header: 'Estado' }
-        ]
-      );
-    }
-    this.notificationService.showToast('Informe CSV descargado correctamente', 'success');
+  public exportTicketsCsv(): void {
+    this.exportService.exportToCsv(
+      `Tickets_Soporte_${new Date().toISOString().split('T')[0]}`,
+      this.tickets,
+      [
+        { key: 'id', header: 'ID Ticket' },
+        { key: 'reason', header: 'Razon / Motivo' },
+        { key: 'priority', header: 'Prioridad' },
+        { key: 'userName', header: 'Solicitante' },
+        { key: 'userEmail', header: 'Email' },
+        { key: 'createdAt', header: 'Fecha' },
+        { key: 'status', header: 'Estado' }
+      ]
+    );
+    this.notificationService.showToast('Informe CSV de tickets descargado correctamente', 'success');
   }
 
-  public exportPdf(): void {
-    if (this.activeAdminTab === 'products') {
-      this.exportService.exportToPdf({
-        title: 'Catálogo de Productos (Sincronizado Supabase)',
-        subtitle: `Total referencias registradas: ${this.products.length}`,
-        filename: `Productos_Supabase_${new Date().toISOString().split('T')[0]}`,
-        columns: [
-          { header: 'Producto', key: 'name' },
-          { header: 'Categoría', key: 'category' },
-          { header: 'Precio Unitario', key: 'price' },
-          { header: 'Stock', key: 'stock' }
-        ],
-        rows: this.products.map(p => ({
-          ...p,
-          price: `${p.price.toLocaleString('es-ES')} €`,
-          stock: `${p.stock} uds`
-        }))
-      });
-    } else if (this.activeAdminTab === 'clients') {
-      this.exportService.exportToPdf({
-        title: 'Maestro de Clientes y Cuentas',
-        subtitle: `Total clientes: ${this.customers.length}`,
-        filename: `Clientes_NovaGestion_${new Date().toISOString().split('T')[0]}`,
-        columns: [
-          { header: 'Cliente', key: 'name' },
-          { header: 'CIF/NIF', key: 'cif' },
-          { header: 'Email', key: 'email' },
-          { header: 'Gasto Total', key: 'totalSpent' },
-          { header: 'Estado', key: 'status' }
-        ],
-        rows: this.customers.map(c => ({
-          ...c,
-          totalSpent: `${c.totalSpent.toLocaleString('es-ES')} €`,
-          status: c.status.toUpperCase()
-        }))
-      });
-    } else {
-      if (!this.metrics) return;
-      this.exportService.exportToPdf({
-        title: 'Informe Consolidado de Facturación y Finanzas',
-        subtitle: `Filtro seleccionado: ${this.selectedFilter.toUpperCase()} | Registros: ${this.invoices.length}`,
-        filename: `Informe_Consolidado_NovaGestion_${new Date().toISOString().split('T')[0]}`,
-        kpis: [
-          { label: 'Facturación Total', value: `${this.metrics.totalRevenue.toLocaleString('es-ES')} €` },
-          { label: 'Clientes Activos', value: `${this.metrics.activeCustomers}` },
-          { label: 'Facturas Pendientes', value: `${this.metrics.pendingInvoices} (${this.metrics.pendingInvoicesAmount.toLocaleString('es-ES')} €)` }
-        ],
-        columns: [
-          { header: 'Nº Factura', key: 'invoiceNumber' },
-          { header: 'Cliente', key: 'customerName' },
-          { header: 'Emisión', key: 'date' },
-          { header: 'Vencimiento', key: 'dueDate' },
-          { header: 'Importe (€)', key: 'amount' },
-          { header: 'Estado', key: 'status' }
-        ],
-        rows: this.invoices.map(i => ({
-          ...i,
-          amount: `${i.amount.toLocaleString('es-ES')} €`,
-          status: i.status.toUpperCase()
-        }))
-      });
-    }
-    this.notificationService.showToast('Informe PDF corporativo generado con éxito', 'success');
-  }
-
-  public onTableAction(event: TableActionEvent<Invoice>): void {
-    const inv = event.row;
-    if (event.action === 'view') {
-      this.notificationService.showAlert(
-        `Detalle de Factura: ${inv.invoiceNumber}`,
-        `Cliente: ${inv.customerName}\nImporte: ${inv.amount.toLocaleString('es-ES')} €\nEstado: ${inv.status.toUpperCase()}\nEmisión: ${inv.date} | Vence: ${inv.dueDate}`
-      );
-    } else if (event.action === 'toggle-status') {
-      const nextStatus = inv.status === 'pagada' ? 'pendiente' : 'pagada';
-      this.sqlDb.updateInvoiceStatus(inv.id, nextStatus).subscribe(() => {
-        inv.status = nextStatus;
-        this.notificationService.showToast(`Factura ${inv.invoiceNumber} marcada como ${nextStatus.toUpperCase()}`, 'primary');
-        this.realtimeDoc.addLog('Estado Modificado', `${inv.invoiceNumber} -> ${nextStatus}`, 'info');
-      });
-    }
+  public exportProductsCsv(): void {
+    this.exportService.exportToCsv(
+      `Productos_Supabase_${new Date().toISOString().split('T')[0]}`,
+      this.products,
+      [
+        { key: 'name', header: 'Nombre' },
+        { key: 'category', header: 'Categoria' },
+        { key: 'price', header: 'Precio' },
+        { key: 'stock', header: 'Cantidad Stock' },
+        { key: 'description', header: 'Descripcion' }
+      ]
+    );
+    this.notificationService.showToast('Informe CSV de productos descargado correctamente', 'success');
   }
 
   public async openHelpModal(): Promise<void> {
@@ -683,9 +750,9 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.dataSub) this.dataSub.unsubscribe();
+    if (this.ticketsSub) this.ticketsSub.unsubscribe();
     if (this.logsSub) this.logsSub.unsubscribe();
-    if (this.revenueChart) this.revenueChart.destroy();
-    if (this.statusChart) this.statusChart.destroy();
+    if (this.productStockChart) this.productStockChart.destroy();
+    if (this.ticketPriorityChart) this.ticketPriorityChart.destroy();
   }
 }

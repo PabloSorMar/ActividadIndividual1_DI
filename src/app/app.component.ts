@@ -70,6 +70,9 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.initTheme();
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login']);
+    }
   }
 
   private initTheme(): void {

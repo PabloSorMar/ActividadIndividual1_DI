@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
@@ -10,27 +10,30 @@ import {
   IonRow,
   IonCol,
   IonItem,
+  IonLabel,
   IonInput,
   IonTextarea,
+  IonSelect,
+  IonSelectOption,
+  IonSpinner,
+  IonSearchbar,
   ModalController
 } from '@ionic/angular';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { RealtimeDocService } from '../../core/services/realtime-doc.service';
+import { SupabaseService } from '../../core/services/supabase.service';
+import { TicketService } from '../../core/services/ticket.service';
+import { Product } from '../../core/models/product.model';
+import { Ticket, TicketPriority } from '../../core/models/ticket.model';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { HelpModalComponent } from '../../shared/components/help-modal/help-modal.component';
 
-export interface UserTask {
-  id: string;
-  title: string;
-  category: string;
-  status: 'completada' | 'en_progreso' | 'pendiente';
-  date: string;
-}
-
 /**
- * Portal del Usuario Estándar (RA 1 - Paso 1.1).
- * Demuestra control de acceso por roles diferenciados y vistas especializadas.
+ * Portal del Usuario Estándar:
+ * - Visualización del catálogo de productos disponibles en el sistema.
+ * - Creación de tickets de soporte con motivo/razón y prioridad (baja, media, alta, urgente).
+ * - Seguimiento de tickets propios ("Mis Tickets").
  */
 @Component({
   selector: 'app-user-dashboard',
@@ -47,66 +50,108 @@ export interface UserTask {
     IonRow,
     IonCol,
     IonItem,
+    IonLabel,
     IonInput,
     IonTextarea,
+    IonSelect,
+    IonSelectOption,
+    IonSpinner,
+    IonSearchbar,
     StatCardComponent
   ],
   templateUrl: './user-dashboard.page.html',
   styleUrls: ['./user-dashboard.page.scss']
 })
-export class UserDashboardPage implements OnInit {
+export class UserDashboardPage implements OnInit, OnDestroy {
   public authService = inject(AuthService);
   private notification = inject(NotificationService);
-  private realtimeDoc = inject(RealtimeDocService);
+  public supabaseService = inject(SupabaseService);
+  public ticketService = inject(TicketService);
   private modalCtrl = inject(ModalController);
   private fb = inject(FormBuilder);
 
-  public myTasks: UserTask[] = [
-    { id: 'tsk-1', title: 'Revisión trimestral de accesibilidad WCAG', category: 'Calidad', status: 'en_progreso', date: '2026-03-25' },
-    { id: 'tsk-2', title: 'Actualización de datos fiscales en el perfil', category: 'Cuenta', status: 'completada', date: '2026-03-20' },
-    { id: 'tsk-3', title: 'Generación de resumen de facturación Q1', category: 'Informes', status: 'pendiente', date: '2026-03-30' }
-  ];
+  public isLoadingProducts: boolean = true;
+  public products: Product[] = [];
+  public productSearchQuery: string = '';
 
-  public requestForm: FormGroup = this.fb.group({
-    subject: ['', [Validators.required, Validators.minLength(4)]],
-    description: ['', [Validators.required, Validators.minLength(10)]]
+  public myTickets: Ticket[] = [];
+  public isSubmittingTicket: boolean = false;
+
+  private ticketsSub?: Subscription;
+
+  // Formulario para Crear Ticket (Requerimiento: Motivo y Prioridad)
+  public ticketForm: FormGroup = this.fb.group({
+    reason: ['', [Validators.required, Validators.minLength(4)]],
+    priority: ['media' as TicketPriority, [Validators.required]],
+    description: ['']
   });
 
-  public isSubmittingRequest: boolean = false;
+  public get filteredProducts(): Product[] {
+    if (!this.productSearchQuery.trim()) {
+      return this.products;
+    }
+    const q = this.productSearchQuery.toLowerCase().trim();
+    return this.products.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.description && p.description.toLowerCase().includes(q)) ||
+      p.category.toLowerCase().includes(q)
+    );
+  }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.loadProducts();
+    this.subscribeToMyTickets();
+  }
 
-  public submitRequest(): void {
-    if (this.requestForm.invalid) {
-      this.requestForm.markAllAsTouched();
+  public async loadProducts(): Promise<void> {
+    this.isLoadingProducts = true;
+    try {
+      this.products = await this.supabaseService.getProducts();
+    } catch (e: any) {
+      console.warn('Error cargando productos:', e);
+      this.notification.showToast('Error al conectar con catálogo de productos', 'danger');
+    } finally {
+      this.isLoadingProducts = false;
+    }
+  }
+
+  private subscribeToMyTickets(): void {
+    const currentUser = this.authService.getCurrentUser();
+    const userEmail = currentUser?.email || 'user@gmail.com';
+
+    this.ticketsSub = this.ticketService.getUserTickets(userEmail).subscribe(list => {
+      this.myTickets = list;
+    });
+  }
+
+  public submitTicket(): void {
+    if (this.ticketForm.invalid) {
+      this.ticketForm.markAllAsTouched();
+      this.notification.showToast('Por favor, indica el motivo y la prioridad del ticket', 'warning');
       return;
     }
 
-    this.isSubmittingRequest = true;
-    const { subject, description } = this.requestForm.value;
+    this.isSubmittingTicket = true;
+    const { reason, priority, description } = this.ticketForm.value;
 
-    setTimeout(() => {
-      this.isSubmittingRequest = false;
-      const newTask: UserTask = {
-        id: `tsk-${Date.now()}`,
-        title: subject,
-        category: 'Soporte',
-        status: 'pendiente',
-        date: new Date().toISOString().split('T')[0]
-      };
-
-      this.myTasks.unshift(newTask);
-      this.requestForm.reset();
-      this.notification.showToast('Solicitud enviada al equipo de administración', 'success');
-
-      this.realtimeDoc.addLog(
-        'Solicitud de Usuario',
-        `Nueva gestión: ${subject}`,
-        'info',
-        this.authService.getCurrentUser()?.name || 'Usuario',
-        'user'
-      );
-    }, 500);
+    this.ticketService.createTicket({ reason, priority, description }).subscribe({
+      next: (newTicket) => {
+        this.isSubmittingTicket = false;
+        this.ticketForm.reset({
+          reason: '',
+          priority: 'media',
+          description: ''
+        });
+        this.notification.showToast(
+          `¡Ticket ${newTicket.id} creado con éxito! Prioridad: ${priority.toUpperCase()}`,
+          'success'
+        );
+      },
+      error: () => {
+        this.isSubmittingTicket = false;
+        this.notification.showToast('No se pudo crear el ticket. Inténtalo de nuevo.', 'danger');
+      }
+    });
   }
 
   public async openHelpModal(): Promise<void> {
@@ -114,5 +159,11 @@ export class UserDashboardPage implements OnInit {
       component: HelpModalComponent
     });
     await modal.present();
+  }
+
+  ngOnDestroy(): void {
+    if (this.ticketsSub) {
+      this.ticketsSub.unsubscribe();
+    }
   }
 }

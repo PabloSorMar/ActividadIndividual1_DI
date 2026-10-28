@@ -17,7 +17,9 @@ export interface TableAction<T = any> {
   id: string;
   label: string;
   icon?: string;
-  color?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
+  color?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'tertiary';
+  fill?: 'solid' | 'outline' | 'clear';
+  showLabel?: boolean;
   condition?: (row: T) => boolean;
 }
 

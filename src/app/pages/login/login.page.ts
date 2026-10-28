@@ -69,6 +69,21 @@ export class LoginPage {
     }
   }
 
+  public quickLogin(role: 'admin' | 'user'): void {
+    if (role === 'admin') {
+      this.loginForm.patchValue({
+        email: 'admin@gmail.com',
+        password: '123456'
+      });
+    } else {
+      this.loginForm.patchValue({
+        email: 'user@gmail.com',
+        password: '123456'
+      });
+    }
+    this.onSubmit();
+  }
+
   public onSubmit(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();

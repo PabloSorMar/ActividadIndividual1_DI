@@ -253,3 +253,102 @@
     }
   }
 }
+
+.quick-access-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+
+  .quick-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #fbbf24;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+
+    ion-icon {
+      font-size: 1.1rem;
+    }
+  }
+
+  .quick-buttons-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+
+    .quick-login-btn {
+      --border-radius: 10px;
+      margin: 0;
+      min-height: 52px;
+      text-transform: none;
+      letter-spacing: normal;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+      &:active {
+        transform: scale(0.98);
+      }
+
+      ion-icon {
+        font-size: 1.4rem;
+        margin-right: 0.6rem;
+      }
+
+      .quick-btn-labels {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        line-height: 1.25;
+
+        .btn-main-label {
+          font-weight: 700;
+          font-size: 0.88rem;
+        }
+
+        .btn-sub-label {
+          font-size: 0.72rem;
+          opacity: 0.88;
+          font-family: monospace;
+          margin-top: 1px;
+        }
+      }
+    }
+
+    .admin-badge-btn {
+      --background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      --box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+    }
+
+    .user-badge-btn {
+      --background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      --box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    }
+  }
+}
+
+.divider-line {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.25rem 0 1rem;
+  color: #64748b;
+  font-size: 0.78rem;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  span {
+    padding: 0 0.75rem;
+    letter-spacing: 0.3px;
+  }
+}

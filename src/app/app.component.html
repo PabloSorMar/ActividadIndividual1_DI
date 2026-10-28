@@ -47,26 +47,21 @@
                 <ion-label>Cuadro de Mando</ion-label>
               </ion-item>
             </ion-menu-toggle>
+          </ng-container>
+
+          <!-- Rutas Usuario Estándar (Exclusivo para usuarios estándar) -->
+          <ng-container *ngIf="!authService.hasRole('admin')">
+            <div class="list-section-header">
+              <span>MI ÁREA</span>
+            </div>
 
             <ion-menu-toggle auto-hide="false">
-              <ion-item routerLink="/management" routerDirection="root" routerLinkActive="selected" class="nav-item">
-                <ion-icon slot="start" name="folder-open-outline"></ion-icon>
-                <ion-label>Gestión de Entidades (SQL)</ion-label>
+              <ion-item routerLink="/user-dashboard" routerDirection="root" routerLinkActive="selected" class="nav-item">
+                <ion-icon slot="start" name="person-outline"></ion-icon>
+                <ion-label>Portal de Usuario</ion-label>
               </ion-item>
             </ion-menu-toggle>
           </ng-container>
-
-          <!-- Rutas Comunes / Usuario Estándar -->
-          <div class="list-section-header">
-            <span>MI ÁREA</span>
-          </div>
-
-          <ion-menu-toggle auto-hide="false">
-            <ion-item routerLink="/user-dashboard" routerDirection="root" routerLinkActive="selected" class="nav-item">
-              <ion-icon slot="start" name="person-outline"></ion-icon>
-              <ion-label>Portal de Usuario</ion-label>
-            </ion-item>
-          </ion-menu-toggle>
 
           <div class="list-section-header">
             <span>SISTEMA Y SOPORTE</span>

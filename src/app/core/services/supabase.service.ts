@@ -339,6 +339,57 @@ export class SupabaseService {
   }
 
   /**
+   * Modifica un producto existente en Supabase
+   */
+  public async updateProduct(id: string, product: Partial<Product>): Promise<Product> {
+    if (!this.isConfigured() || !this.supabase) {
+      throw new Error('Supabase no está configurado.');
+    }
+
+    let { data, error } = await this.supabase
+      .from('products')
+      .update({
+        nombre: product.name,
+        precio: Number(product.price),
+        stock: Number(product.stock),
+        descripcion: product.description
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      const resEn = await this.supabase
+        .from('products')
+        .update({
+          name: product.name,
+          price: Number(product.price),
+          stock: Number(product.stock),
+          category: product.category,
+          description: product.description
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (resEn.error) {
+        throw new Error(resEn.error.message || error.message);
+      }
+      data = resEn.data;
+    }
+
+    return {
+      id: data.id,
+      name: data.nombre || data.name || product.name || '',
+      price: Number(data.precio ?? data.price ?? product.price ?? 0),
+      stock: Number(data.stock ?? product.stock ?? 0),
+      category: data.categoria || data.category || product.category || 'General',
+      description: data.descripcion || data.description || product.description || '',
+      created_at: data.created_at || new Date().toISOString()
+    };
+  }
+
+  /**
    * Elimina un producto de Supabase
    */
   public async deleteProduct(id: string): Promise<boolean> {
@@ -404,6 +455,31 @@ export class SupabaseService {
         email: client.email
       }
     ]).select().single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  /**
+   * Modifica un cliente existente en la tabla 'clients' de Supabase
+   */
+  public async updateClient(id: string, client: { nombre: string; empresa: string; email: string }): Promise<any> {
+    if (!this.isConfigured() || !this.supabase) {
+      throw new Error('Supabase no está configurado.');
+    }
+
+    const { data, error } = await this.supabase
+      .from('clients')
+      .update({
+        nombre: client.nombre,
+        empresa: client.empresa,
+        email: client.email
+      })
+      .eq('id', id)
+      .select()
+      .single();
 
     if (error) {
       throw new Error(error.message);

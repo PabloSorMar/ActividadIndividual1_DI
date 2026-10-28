@@ -1,16 +1,16 @@
 <ion-content class="dashboard-content ion-padding">
-  <!-- Barra Superior / Header de Página con Identificador y Selector de Pestañas -->
+  <!-- Barra Superior de Navegación del Administrador -->
   <div class="page-header">
     <div class="header-titles">
       <div class="role-badge-row">
         <ion-badge color="danger">Rol Administrador</ion-badge>
-        <span class="company-tag">{{ authService.getCurrentUser()?.company }}</span>
+        <span class="user-email">{{ authService.getCurrentUser()?.email }}</span>
       </div>
-      <h1>Centro de Mando Integral</h1>
-      <p>Supervisión analítica, gestión de clientes y catálogo de productos sincronizado con Supabase.</p>
+      <h1>Panel de Administración NovaGestión</h1>
+      <p>Centro de mando operativo y gestión centralizada de catálogo y clientes en Supabase.</p>
     </div>
 
-    <!-- Pestañas Principales Requeridas: Centro de Mando, Clientes y Productos -->
+    <!-- Pestañas Principales: Centro de Mando / Gestión de Clientes y Productos -->
     <div class="main-tabs-wrapper">
       <ion-segment
         [value]="activeAdminTab"
@@ -23,306 +23,257 @@
           <ion-label>Centro de Mando</ion-label>
         </ion-segment-button>
 
-        <ion-segment-button value="clients">
-          <ion-icon name="people-outline"></ion-icon>
-          <ion-label>Clientes ({{ customers.length }})</ion-label>
-        </ion-segment-button>
-
-        <ion-segment-button value="products">
-          <ion-icon name="cube-outline"></ion-icon>
-          <ion-label>Productos Supabase ({{ products.length }})</ion-label>
+        <ion-segment-button value="management">
+          <ion-icon name="options-outline"></ion-icon>
+          <ion-label>Gestión (Clientes y Productos)</ion-label>
         </ion-segment-button>
       </ion-segment>
     </div>
   </div>
 
-  <!-- Estado de Carga con Spinner -->
+  <!-- Estado de Carga -->
   <div *ngIf="isLoading" class="loading-container" role="status" aria-live="polite">
     <ion-spinner name="crescent" color="primary"></ion-spinner>
-    <p>Consumiendo concurrentemente fuentes SQL, NoSQL y Supabase...</p>
+    <p>Sincronizando inventario de productos, clientes y tickets...</p>
   </div>
 
   <!-- ==================== PESTAÑA 1: CENTRO DE MANDO ==================== -->
-  <div *ngIf="!isLoading && activeAdminTab === 'dashboard' && metrics" class="dashboard-body">
-    <!-- Barra de Herramientas del Dashboard (Filtros y Exportaciones) -->
-    <div class="tab-toolbar">
-      <div class="toolbar-title">
-        <ion-icon name="analytics-outline" color="primary"></ion-icon>
-        <span>Métricas Operativas y Facturación</span>
-      </div>
-
-      <div class="toolbar-actions">
-        <ion-segment
-          [value]="selectedFilter"
-          (ionChange)="onFilterChange($event)"
-          class="filter-segment"
-          aria-label="Filtro temporal de datos"
-        >
-          <ion-segment-button value="all"><ion-label>Todo</ion-label></ion-segment-button>
-          <ion-segment-button value="year"><ion-label>2026</ion-label></ion-segment-button>
-          <ion-segment-button value="month"><ion-label>Este Mes</ion-label></ion-segment-button>
-        </ion-segment>
-
-        <div class="export-group">
-          <ion-button fill="outline" color="primary" (click)="exportCsv()" aria-label="Exportar datos a CSV">
-            <ion-icon slot="start" name="document-text-outline"></ion-icon>
-            CSV
-          </ion-button>
-          <ion-button fill="solid" color="primary" (click)="exportPdf()" aria-label="Exportar informe a PDF">
-            <ion-icon slot="start" name="download-outline"></ion-icon>
-            PDF
-          </ion-button>
-          <ion-button fill="clear" color="medium" (click)="loadData()" aria-label="Recargar datos">
-            <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
-          </ion-button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Fila 1: Componentes Reutilizables StatCardComponent -->
+  <div *ngIf="!isLoading && activeAdminTab === 'dashboard'" class="dashboard-body">
+    <!-- Tarjetas de Métricas Rápidas -->
     <ion-grid class="ion-no-padding stats-grid">
       <ion-row>
         <ion-col size="12" size-sm="6" size-lg="3">
           <app-stat-card
-            title="Ingresos Totales"
-            [value]="(metrics.totalRevenue | number:'1.0-0':'es') || '0'"
-            suffix=" €"
-            icon="cash-outline"
+            title="Stock Total Inventario"
+            [value]="totalProductStock"
+            suffix=" uds"
+            icon="cube-outline"
             color="primary"
-            [trend]="metrics.revenueTrend"
-            trendLabel="vs. período anterior"
+            description="Cantidad global en almacén"
           ></app-stat-card>
         </ion-col>
 
         <ion-col size="12" size-sm="6" size-lg="3">
           <app-stat-card
-            title="Clientes Activos"
-            [value]="metrics.activeCustomers"
-            icon="people-outline"
-            color="secondary"
-            [trend]="metrics.customersTrend"
-            trendLabel="crecimiento orgánico"
-          ></app-stat-card>
-        </ion-col>
-
-        <ion-col size="12" size-sm="6" size-lg="3">
-          <app-stat-card
-            title="Facturas Pendientes"
-            [value]="metrics.pendingInvoices"
-            icon="time-outline"
-            color="warning"
-            [description]="((metrics.pendingInvoicesAmount | number:'1.0-0':'es') || '0') + ' € por cobrar'"
-          ></app-stat-card>
-        </ion-col>
-
-        <ion-col size="12" size-sm="6" size-lg="3">
-          <app-stat-card
-            title="Ratio Satisfacción"
-            [value]="metrics.satisfactionRate"
-            suffix="%"
-            icon="star-outline"
+            title="Catálogo de Productos"
+            [value]="products.length"
+            suffix=" refs"
+            icon="pricetags-outline"
             color="success"
-            [trend]="2.4"
-            trendLabel="auditoría de calidad"
+            description="Sincronizados en Supabase"
+          ></app-stat-card>
+        </ion-col>
+
+        <ion-col size="12" size-sm="6" size-lg="3">
+          <app-stat-card
+            title="Tickets Pendientes"
+            [value]="openTicketCount"
+            icon="ticket-outline"
+            color="warning"
+            [description]="urgentTicketCount + ' urgentes o alta prioridad'"
+          ></app-stat-card>
+        </ion-col>
+
+        <ion-col size="12" size-sm="6" size-lg="3">
+          <app-stat-card
+            title="Tickets Resueltos"
+            [value]="resolvedTicketCount"
+            icon="checkmark-done-circle-outline"
+            color="secondary"
+            description="Casos completados"
           ></app-stat-card>
         </ion-col>
       </ion-row>
     </ion-grid>
 
-    <!-- Fila 2: Gráficos Interactivos Chart.js -->
+    <!-- Fila Gráficos: 1. Distribución de Productos en Cantidad | 2. Prioridad de Tickets -->
     <ion-grid class="ion-no-padding charts-grid ion-margin-top">
       <ion-row>
+        <!-- Gráfico de Distribución de Productos por Cantidad -->
         <ion-col size="12" size-lg="8">
           <div class="chart-card">
             <div class="card-header-clean">
               <div class="title-wrap">
                 <ion-icon name="trending-up-outline" color="primary"></ion-icon>
-                <h3>Evolución de Facturación Mensual vs Objetivos</h3>
+                <div>
+                  <h3>Curva de Existencias de Productos</h3>
+                  <span class="sub-caption">Distribución y volumen de stock por referencia en almacén (Área Interactiva)</span>
+                </div>
               </div>
-              <span class="chart-badge">Chart.js Interactivo</span>
+              <ion-badge color="primary">{{ totalProductStock }} unidades totales</ion-badge>
             </div>
+
             <div class="chart-wrapper">
-              <canvas #revenueChartCanvas></canvas>
+              <canvas #productStockCanvas></canvas>
             </div>
           </div>
         </ion-col>
 
+        <!-- Gráfico de Distribución de Tickets por Prioridad -->
         <ion-col size="12" size-lg="4">
           <div class="chart-card">
             <div class="card-header-clean">
               <div class="title-wrap">
-                <ion-icon name="pie-chart-outline" color="secondary"></ion-icon>
-                <h3>Distribución por Estados</h3>
+                <ion-icon name="pie-chart-outline" color="danger"></ion-icon>
+                <div>
+                  <h3>Tickets por Prioridad</h3>
+                  <span class="sub-caption">Urgente, Alta, Media y Baja</span>
+                </div>
               </div>
             </div>
+
             <div class="chart-wrapper donut-wrapper">
-              <canvas #statusChartCanvas></canvas>
+              <canvas #ticketPriorityCanvas></canvas>
             </div>
           </div>
         </ion-col>
       </ion-row>
     </ion-grid>
 
-    <!-- Fila 3: Tabla de Facturas SQL y Feed NoSQL -->
-    <ion-grid class="ion-no-padding data-grid ion-margin-top">
-      <ion-row>
-        <ion-col size="12" size-xl="8">
-          <app-data-table
-            title="Últimas Facturas Emitidas (Fuente SQL Relacional)"
-            [data]="invoices"
-            [columns]="tableColumns"
-            [actions]="tableActions"
-            [pageSize]="5"
-            searchPlaceholder="Buscar por cliente, nº factura..."
-            (actionClick)="onTableAction($event)"
-          ></app-data-table>
-        </ion-col>
-
-        <ion-col size="12" size-xl="4">
-          <div class="realtime-feed-card">
-            <div class="feed-header">
-              <div class="feed-title">
-                <span class="live-dot" aria-hidden="true"></span>
-                <h3>Stream en Tiempo Real (NoSQL)</h3>
-              </div>
-              <ion-badge color="tertiary">{{ liveLogs.length }} eventos</ion-badge>
-            </div>
-            <p class="feed-subtitle">Registro de actividad y suscripciones push en vivo.</p>
-
-            <div class="logs-list" role="log" aria-live="polite">
-              <div *ngFor="let log of liveLogs" class="log-item" [class]="'sev-' + log.severity">
-                <div class="log-meta">
-                  <span class="log-action">{{ log.action }}</span>
-                  <span class="log-time">{{ log.timestamp }}</span>
-                </div>
-                <p class="log-details">{{ log.details }}</p>
-                <div class="log-author">
-                  <ion-icon name="person-circle-outline"></ion-icon>
-                  <span>{{ log.userName }} ({{ log.userRole }})</span>
-                </div>
-              </div>
-            </div>
+    <!-- Fila Tabla de Tickets creados por usuarios con Razón y Prioridad -->
+    <div class="tickets-section ion-margin-top">
+      <div class="section-toolbar">
+        <div class="section-title">
+          <ion-icon name="chatbubbles-outline" color="warning"></ion-icon>
+          <div>
+            <h2>Tickets Creados por Usuarios</h2>
+            <p>Supervisión de solicitudes con detalle de <strong>razón / motivo</strong> y <strong>prioridad</strong>.</p>
           </div>
-        </ion-col>
-      </ion-row>
-    </ion-grid>
-  </div>
-
-  <!-- ==================== PESTAÑA 2: CLIENTES ==================== -->
-  <div *ngIf="!isLoading && activeAdminTab === 'clients'" class="tab-content clients-view">
-    <div class="tab-toolbar">
-      <div class="toolbar-title">
-        <ion-icon name="people-outline" color="secondary"></ion-icon>
-        <div>
-          <h3>Directorio Maestro de Clientes (Supabase)</h3>
-          <p>Clientes sincronizados directamente desde la base de datos Supabase (tabla 'clients').</p>
         </div>
-      </div>
 
-      <div class="toolbar-actions">
-        <ion-button color="secondary" fill="solid" (click)="openNewClientModal()" class="action-btn-main">
-          <ion-icon slot="start" name="person-add-outline"></ion-icon>
-          Añadir Cliente
-        </ion-button>
-
-        <div class="export-group">
-          <ion-button fill="outline" color="primary" (click)="exportCsv()" aria-label="Exportar clientes a CSV">
-            <ion-icon slot="start" name="document-text-outline"></ion-icon>
-            CSV
-          </ion-button>
-          <ion-button fill="solid" color="primary" (click)="exportPdf()" aria-label="Exportar clientes a PDF">
+        <div class="toolbar-actions">
+          <ion-button fill="outline" color="primary" (click)="exportTicketsCsv()">
             <ion-icon slot="start" name="download-outline"></ion-icon>
-            PDF
-          </ion-button>
-          <ion-button fill="clear" color="medium" (click)="loadClients()" aria-label="Recargar clientes Supabase">
-            <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+            Exportar CSV
           </ion-button>
         </div>
       </div>
-    </div>
 
-    <!-- Tabla de Clientes Reutilizable DataTableComponent -->
-    <div class="table-container ion-margin-top">
-      <app-data-table
-        title="Listado de Clientes Registrados en Supabase"
-        [data]="customers"
-        [columns]="customerColumns"
-        [actions]="customerActions"
-        [pageSize]="8"
-        emptyMessage="No hay clientes en la base de datos de Supabase. Añade uno con el botón superior."
-        searchPlaceholder="Buscar por nombre, empresa, email..."
-        (actionClick)="onClientAction($event)"
-      ></app-data-table>
+      <div class="table-container">
+        <app-data-table
+          title="Registro de Incidencias y Tickets de Usuarios"
+          [data]="tickets"
+          [columns]="ticketColumns"
+          [actions]="ticketActions"
+          [pageSize]="6"
+          emptyMessage="No hay tickets de usuarios registrados."
+          searchPlaceholder="Buscar por motivo, usuario, prioridad..."
+          (actionClick)="onTicketAction($event)"
+        ></app-data-table>
+      </div>
     </div>
   </div>
 
-  <!-- ==================== PESTAÑA 3: PRODUCTOS (SUPABASE) ==================== -->
-  <div *ngIf="!isLoading && activeAdminTab === 'products'" class="tab-content products-view">
-    <div class="tab-toolbar products-toolbar">
-      <div class="toolbar-title">
-        <ion-icon name="cube-outline" color="success"></ion-icon>
-        <div>
-          <div class="supabase-status-row">
+  <!-- ==================== PESTAÑA 2: GESTIÓN (CLIENTES Y PRODUCTOS) ==================== -->
+  <div *ngIf="!isLoading && activeAdminTab === 'management'" class="tab-content management-view">
+    <div class="sub-segment-wrapper">
+      <ion-segment
+        [value]="managementSubTab"
+        (ionChange)="onManagementSubTabChange($event.detail.value)"
+        class="management-sub-nav"
+      >
+        <ion-segment-button value="products">
+          <ion-icon name="cube-outline"></ion-icon>
+          <ion-label>Modificar Productos ({{ products.length }})</ion-label>
+        </ion-segment-button>
+
+        <ion-segment-button value="clients">
+          <ion-icon name="people-outline"></ion-icon>
+          <ion-label>Modificar Clientes ({{ customers.length }})</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </div>
+
+    <!-- Sub-vista 1: PRODUCTOS EN SUPABASE -->
+    <div *ngIf="managementSubTab === 'products'" class="management-sub-panel ion-margin-top">
+      <div class="tab-toolbar">
+        <div class="toolbar-title">
+          <ion-icon name="cube-outline" color="success"></ion-icon>
+          <div>
             <h3>Catálogo de Productos en Supabase</h3>
-            <span class="api-badge">
-              <ion-icon name="cloud-outline"></ion-icon>
-              REST API: spfawsmajwnrtzmqiyvy.supabase.co
-            </span>
+            <p>Alta, modificación de precio/stock/descripción y eliminación sincronizada en Supabase.</p>
           </div>
-          <p>Añade o elimina productos en tiempo real vinculados con la base de datos Supabase.</p>
         </div>
-      </div>
 
-      <div class="toolbar-actions">
-        <ion-button color="success" fill="solid" (click)="openNewProductModal()" class="action-btn-main">
-          <ion-icon slot="start" name="add-circle-outline"></ion-icon>
-          Añadir Producto
-        </ion-button>
+        <div class="toolbar-actions">
+          <ion-button color="success" fill="solid" (click)="openNewProductModal()" class="action-btn-main">
+            <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+            Añadir Producto
+          </ion-button>
 
-        <ion-button color="medium" fill="outline" (click)="openKeyModal()" class="action-btn-key" title="Configurar Supabase Key">
-          <ion-icon slot="start" name="key-outline"></ion-icon>
-          API Key
-        </ion-button>
-
-        <div class="export-group">
-          <ion-button fill="outline" color="primary" (click)="exportCsv()" aria-label="Exportar productos a CSV">
-            <ion-icon slot="start" name="document-text-outline"></ion-icon>
+          <ion-button fill="outline" color="primary" (click)="exportProductsCsv()">
+            <ion-icon slot="start" name="download-outline"></ion-icon>
             CSV
           </ion-button>
-          <ion-button fill="solid" color="primary" (click)="exportPdf()" aria-label="Exportar productos a PDF">
-            <ion-icon slot="start" name="download-outline"></ion-icon>
-            PDF
-          </ion-button>
-          <ion-button fill="clear" color="medium" (click)="loadProducts()" aria-label="Recargar productos Supabase">
+
+          <ion-button fill="clear" color="medium" (click)="loadProducts()" title="Recargar productos">
             <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
           </ion-button>
         </div>
       </div>
+
+      <div class="table-container ion-margin-top">
+        <app-data-table
+          title="Inventario de Productos (Edición y Eliminación directa en Supabase)"
+          [data]="products"
+          [columns]="productColumns"
+          [actions]="productActions"
+          [pageSize]="8"
+          emptyMessage="No hay productos en Supabase."
+          searchPlaceholder="Buscar producto por nombre o categoría..."
+          (actionClick)="onProductAction($event)"
+        ></app-data-table>
+      </div>
     </div>
 
-    <!-- Tabla de Productos Reutilizable DataTableComponent -->
-    <div class="table-container ion-margin-top">
-      <app-data-table
-        title="Inventario de Productos (Supabase)"
-        [data]="products"
-        [columns]="productColumns"
-        [actions]="productActions"
-        [pageSize]="8"
-        emptyMessage="No hay productos en la base de datos de Supabase. Añade uno con el botón superior."
-        searchPlaceholder="Buscar por nombre, categoría..."
-        (actionClick)="onProductAction($event)"
-      ></app-data-table>
+    <!-- Sub-vista 2: CLIENTES EN SUPABASE -->
+    <div *ngIf="managementSubTab === 'clients'" class="management-sub-panel ion-margin-top">
+      <div class="tab-toolbar">
+        <div class="toolbar-title">
+          <ion-icon name="people-outline" color="secondary"></ion-icon>
+          <div>
+            <h3>Directorio Maestro de Clientes en Supabase</h3>
+            <p>Alta, modificación de datos de contacto y empresa, y eliminación en la tabla 'clients'.</p>
+          </div>
+        </div>
+
+        <div class="toolbar-actions">
+          <ion-button color="secondary" fill="solid" (click)="openNewClientModal()" class="action-btn-main">
+            <ion-icon slot="start" name="person-add-outline"></ion-icon>
+            Añadir Cliente
+          </ion-button>
+
+          <ion-button fill="clear" color="medium" (click)="loadClients()" title="Recargar clientes">
+            <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+
+      <div class="table-container ion-margin-top">
+        <app-data-table
+          title="Listado de Clientes (Edición y Eliminación en Supabase)"
+          [data]="customers"
+          [columns]="customerColumns"
+          [actions]="customerActions"
+          [pageSize]="8"
+          emptyMessage="No hay clientes registrados en Supabase."
+          searchPlaceholder="Buscar cliente por nombre, empresa, email..."
+          (actionClick)="onClientAction($event)"
+        ></app-data-table>
+      </div>
     </div>
   </div>
 
-  <!-- Modal para Añadir Nuevo Producto -->
-  <ion-modal [isOpen]="isProductModalOpen" (didDismiss)="isProductModalOpen = false" class="product-modal">
+  <!-- ==================== MODALES ==================== -->
+
+  <!-- Modal 1: Añadir Nuevo Producto -->
+  <ion-modal [isOpen]="isProductModalOpen" (didDismiss)="isProductModalOpen = false" class="custom-modal">
     <ng-template>
       <ion-header>
         <ion-toolbar color="primary">
           <ion-title>Añadir Producto a Supabase</ion-title>
           <ion-buttons slot="end">
-            <ion-button (click)="isProductModalOpen = false" aria-label="Cerrar modal">
+            <ion-button (click)="isProductModalOpen = false">
               <ion-icon slot="icon-only" name="close-outline"></ion-icon>
             </ion-button>
           </ion-buttons>
@@ -331,72 +282,53 @@
 
       <ion-content class="ion-padding modal-form-content">
         <form [formGroup]="productForm" (ngSubmit)="saveProduct()">
-          <p class="modal-info-text">
-            El producto se sincronizará inmediatamente en Supabase (<code>https://spfawsmajwnrtzmqiyvy.supabase.co</code>).
-          </p>
-
           <div class="form-fields-wrapper">
-            <!-- Nombre -->
             <div class="modal-field">
               <ion-item lines="none" class="modal-input-item">
                 <ion-label position="stacked">Nombre del Producto *</ion-label>
-                <ion-input formControlName="name" placeholder="Ej: Servidor Edge 64GB"></ion-input>
+                <ion-input formControlName="name" placeholder="Ej: Router Gigabit 24 Puertos"></ion-input>
               </ion-item>
-              <div *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched" class="field-error">
-                El nombre es obligatorio (mínimo 3 caracteres).
-              </div>
             </div>
 
-            <!-- Categoría -->
             <div class="modal-field">
               <ion-item lines="none" class="modal-input-item">
                 <ion-label position="stacked">Categoría *</ion-label>
-                <ion-select formControlName="category" interface="popover" placeholder="Selecciona categoría">
+                <ion-select formControlName="category" interface="popover">
                   <ion-select-option value="Hardware">Hardware</ion-select-option>
-                  <ion-select-option value="Software">Software</ion-select-option>
                   <ion-select-option value="Redes">Redes</ion-select-option>
-                  <ion-select-option value="IoT">IoT</ion-select-option>
                   <ion-select-option value="Seguridad">Seguridad</ion-select-option>
+                  <ion-select-option value="Software">Software</ion-select-option>
+                  <ion-select-option value="IoT">IoT</ion-select-option>
                 </ion-select>
               </ion-item>
             </div>
 
-            <!-- Fila Precio y Stock -->
             <div class="modal-fields-row">
               <div class="modal-field">
                 <ion-item lines="none" class="modal-input-item">
                   <ion-label position="stacked">Precio Unitario (€) *</ion-label>
                   <ion-input type="number" formControlName="price" placeholder="199.99" step="0.01"></ion-input>
                 </ion-item>
-                <div *ngIf="productForm.get('price')?.invalid && productForm.get('price')?.touched" class="field-error">
-                  Introduce un precio válido mayor a 0.
-                </div>
               </div>
 
               <div class="modal-field">
                 <ion-item lines="none" class="modal-input-item">
-                  <ion-label position="stacked">Stock Disponible *</ion-label>
+                  <ion-label position="stacked">Cantidad en Stock *</ion-label>
                   <ion-input type="number" formControlName="stock" placeholder="10" step="1"></ion-input>
                 </ion-item>
-                <div *ngIf="productForm.get('stock')?.invalid && productForm.get('stock')?.touched" class="field-error">
-                  Introduce una cantidad de stock válida.
-                </div>
               </div>
             </div>
 
-            <!-- Descripción -->
             <div class="modal-field">
               <ion-item lines="none" class="modal-input-item">
                 <ion-label position="stacked">Descripción Técnica</ion-label>
-                <ion-input formControlName="description" placeholder="Especificaciones o notas adicionales..."></ion-input>
+                <ion-input formControlName="description" placeholder="Detalles de hardware, características..."></ion-input>
               </ion-item>
             </div>
           </div>
 
           <div class="modal-form-actions ion-margin-top">
-            <ion-button fill="outline" color="medium" (click)="isProductModalOpen = false">
-              Cancelar
-            </ion-button>
+            <ion-button fill="outline" color="medium" (click)="isProductModalOpen = false">Cancelar</ion-button>
             <ion-button type="submit" color="primary" [disabled]="productForm.invalid">
               <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>
               Guardar en Supabase
@@ -407,14 +339,14 @@
     </ng-template>
   </ion-modal>
 
-  <!-- Modal para Configurar Clave Supabase (Opcional en Caliente) -->
-  <ion-modal [isOpen]="isKeyModalOpen" (didDismiss)="isKeyModalOpen = false" class="key-modal">
+  <!-- Modal 2: Modificar Producto Existente -->
+  <ion-modal [isOpen]="isEditProductModalOpen" (didDismiss)="isEditProductModalOpen = false" class="custom-modal">
     <ng-template>
       <ion-header>
-        <ion-toolbar color="dark">
-          <ion-title>Configuración Clave Supabase</ion-title>
+        <ion-toolbar color="primary">
+          <ion-title>Modificar Producto</ion-title>
           <ion-buttons slot="end">
-            <ion-button (click)="isKeyModalOpen = false">
+            <ion-button (click)="isEditProductModalOpen = false">
               <ion-icon slot="icon-only" name="close-outline"></ion-icon>
             </ion-button>
           </ion-buttons>
@@ -422,35 +354,76 @@
       </ion-header>
 
       <ion-content class="ion-padding modal-form-content">
-        <p class="modal-info-text">
-          Endpoint configurado: <code>https://spfawsmajwnrtzmqiyvy.supabase.co/rest/v1/</code><br>
-          Pega tu clave pública <code>anon</code> de Supabase para activar peticiones HTTP directas en la nube.
-        </p>
+        <form [formGroup]="editProductForm" (ngSubmit)="saveEditProduct()">
+          <p class="modal-info-text">
+            Modificando producto en la base de datos de Supabase.
+          </p>
 
-        <ion-item lines="none" class="modal-input-item">
-          <ion-label position="stacked">Supabase Anon Key</ion-label>
-          <ion-input [(ngModel)]="tempAnonKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></ion-input>
-        </ion-item>
+          <div class="form-fields-wrapper">
+            <div class="modal-field">
+              <ion-item lines="none" class="modal-input-item">
+                <ion-label position="stacked">Nombre del Producto *</ion-label>
+                <ion-input formControlName="name"></ion-input>
+              </ion-item>
+            </div>
 
-        <div class="modal-form-actions ion-margin-top">
-          <ion-button fill="outline" color="medium" (click)="isKeyModalOpen = false">Cerrar</ion-button>
-          <ion-button color="primary" (click)="saveAnonKey()" [disabled]="!tempAnonKey.trim()">
-            <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
-            Aplicar Clave
-          </ion-button>
-        </div>
+            <div class="modal-field">
+              <ion-item lines="none" class="modal-input-item">
+                <ion-label position="stacked">Categoría *</ion-label>
+                <ion-select formControlName="category" interface="popover">
+                  <ion-select-option value="Hardware">Hardware</ion-select-option>
+                  <ion-select-option value="Redes">Redes</ion-select-option>
+                  <ion-select-option value="Seguridad">Seguridad</ion-select-option>
+                  <ion-select-option value="Software">Software</ion-select-option>
+                  <ion-select-option value="IoT">IoT</ion-select-option>
+                </ion-select>
+              </ion-item>
+            </div>
+
+            <div class="modal-fields-row">
+              <div class="modal-field">
+                <ion-item lines="none" class="modal-input-item">
+                  <ion-label position="stacked">Precio (€) *</ion-label>
+                  <ion-input type="number" formControlName="price" step="0.01"></ion-input>
+                </ion-item>
+              </div>
+
+              <div class="modal-field">
+                <ion-item lines="none" class="modal-input-item">
+                  <ion-label position="stacked">Cantidad en Stock *</ion-label>
+                  <ion-input type="number" formControlName="stock" step="1"></ion-input>
+                </ion-item>
+              </div>
+            </div>
+
+            <div class="modal-field">
+              <ion-item lines="none" class="modal-input-item">
+                <ion-label position="stacked">Descripción</ion-label>
+                <ion-input formControlName="description"></ion-input>
+              </ion-item>
+            </div>
+          </div>
+
+          <div class="modal-form-actions ion-margin-top">
+            <ion-button fill="outline" color="medium" (click)="isEditProductModalOpen = false">Cancelar</ion-button>
+            <ion-button type="submit" color="primary" [disabled]="editProductForm.invalid">
+              <ion-icon slot="start" name="save-outline"></ion-icon>
+              Guardar Cambios
+            </ion-button>
+          </div>
+        </form>
       </ion-content>
     </ng-template>
   </ion-modal>
 
-  <!-- Modal para Añadir Nuevo Cliente a Supabase -->
-  <ion-modal [isOpen]="isClientModalOpen" (didDismiss)="isClientModalOpen = false" class="client-modal">
+  <!-- Modal 3: Añadir Nuevo Cliente -->
+  <ion-modal [isOpen]="isClientModalOpen" (didDismiss)="isClientModalOpen = false" class="custom-modal">
     <ng-template>
       <ion-header>
         <ion-toolbar color="secondary">
           <ion-title>Añadir Cliente a Supabase</ion-title>
           <ion-buttons slot="end">
-            <ion-button (click)="isClientModalOpen = false" aria-label="Cerrar modal">
+            <ion-button (click)="isClientModalOpen = false">
               <ion-icon slot="icon-only" name="close-outline"></ion-icon>
             </ion-button>
           </ion-buttons>
@@ -459,52 +432,89 @@
 
       <ion-content class="ion-padding modal-form-content">
         <form [formGroup]="clientForm" (ngSubmit)="saveClient()">
-          <p class="modal-info-text">
-            El cliente se registrará inmediatamente en la tabla <code>clients</code> de Supabase (<code>https://spfawsmajwnrtzmqiyvy.supabase.co</code>).
-          </p>
-
           <div class="form-fields-wrapper">
-            <!-- Nombre -->
             <div class="modal-field">
               <ion-item lines="none" class="modal-input-item">
-                <ion-label position="stacked">Nombre del Contacto / Cliente *</ion-label>
-                <ion-input formControlName="nombre" placeholder="Ej: Laura Gómez"></ion-input>
+                <ion-label position="stacked">Nombre del Contacto *</ion-label>
+                <ion-input formControlName="nombre" placeholder="Ej: Carlos Sánchez"></ion-input>
               </ion-item>
-              <div *ngIf="clientForm.get('nombre')?.invalid && clientForm.get('nombre')?.touched" class="field-error">
-                El nombre es obligatorio (mínimo 3 caracteres).
-              </div>
             </div>
 
-            <!-- Empresa -->
             <div class="modal-field">
               <ion-item lines="none" class="modal-input-item">
                 <ion-label position="stacked">Empresa / Razón Social *</ion-label>
-                <ion-input formControlName="empresa" placeholder="Ej: Innova Cloud S.L."></ion-input>
+                <ion-input formControlName="empresa" placeholder="Ej: NovaTech Soluciones"></ion-input>
               </ion-item>
-              <div *ngIf="clientForm.get('empresa')?.invalid && clientForm.get('empresa')?.touched" class="field-error">
-                La empresa es obligatoria (mínimo 2 caracteres).
-              </div>
             </div>
 
-            <!-- Email -->
             <div class="modal-field">
               <ion-item lines="none" class="modal-input-item">
                 <ion-label position="stacked">Correo Electrónico *</ion-label>
                 <ion-input type="email" formControlName="email" placeholder="contacto@empresa.com"></ion-input>
               </ion-item>
-              <div *ngIf="clientForm.get('email')?.invalid && clientForm.get('email')?.touched" class="field-error">
-                Introduce un correo electrónico válido.
-              </div>
             </div>
           </div>
 
           <div class="modal-form-actions ion-margin-top">
-            <ion-button fill="outline" color="medium" (click)="isClientModalOpen = false">
-              Cancelar
-            </ion-button>
+            <ion-button fill="outline" color="medium" (click)="isClientModalOpen = false">Cancelar</ion-button>
             <ion-button type="submit" color="secondary" [disabled]="clientForm.invalid">
               <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>
               Guardar en Supabase
+            </ion-button>
+          </div>
+        </form>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Modal 4: Modificar Cliente Existente -->
+  <ion-modal [isOpen]="isEditClientModalOpen" (didDismiss)="isEditClientModalOpen = false" class="custom-modal">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar color="secondary">
+          <ion-title>Modificar Cliente</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="isEditClientModalOpen = false">
+              <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="ion-padding modal-form-content">
+        <form [formGroup]="editClientForm" (ngSubmit)="saveEditClient()">
+          <p class="modal-info-text">
+            Actualizando datos de cliente en la tabla 'clients' de Supabase.
+          </p>
+
+          <div class="form-fields-wrapper">
+            <div class="modal-field">
+              <ion-item lines="none" class="modal-input-item">
+                <ion-label position="stacked">Nombre del Contacto *</ion-label>
+                <ion-input formControlName="nombre"></ion-input>
+              </ion-item>
+            </div>
+
+            <div class="modal-field">
+              <ion-item lines="none" class="modal-input-item">
+                <ion-label position="stacked">Empresa / Razón Social *</ion-label>
+                <ion-input formControlName="empresa"></ion-input>
+              </ion-item>
+            </div>
+
+            <div class="modal-field">
+              <ion-item lines="none" class="modal-input-item">
+                <ion-label position="stacked">Correo Electrónico *</ion-label>
+                <ion-input type="email" formControlName="email"></ion-input>
+              </ion-item>
+            </div>
+          </div>
+
+          <div class="modal-form-actions ion-margin-top">
+            <ion-button fill="outline" color="medium" (click)="isEditClientModalOpen = false">Cancelar</ion-button>
+            <ion-button type="submit" color="secondary" [disabled]="editClientForm.invalid">
+              <ion-icon slot="start" name="save-outline"></ion-icon>
+              Guardar Cambios
             </ion-button>
           </div>
         </form>

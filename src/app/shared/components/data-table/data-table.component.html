@@ -109,13 +109,15 @@
             <div class="actions-wrapper">
               <ion-button
                 *ngFor="let act of actions"
-                fill="clear"
+                [fill]="act.fill || (act.showLabel ? 'solid' : 'clear')"
                 size="small"
                 [color]="act.color || 'primary'"
                 (click)="onAction(act.id, row, $event)"
                 [attr.aria-label]="act.label"
+                [class.action-btn-with-label]="act.showLabel"
               >
-                <ion-icon slot="icon-only" [name]="act.icon || 'ellipsis-horizontal'"></ion-icon>
+                <ion-icon [slot]="act.showLabel ? 'start' : 'icon-only'" [name]="act.icon || 'ellipsis-horizontal'"></ion-icon>
+                <span *ngIf="act.showLabel" class="action-btn-text">{{ act.label }}</span>
               </ion-button>
             </div>
           </td>

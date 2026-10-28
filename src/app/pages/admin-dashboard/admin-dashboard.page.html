@@ -132,23 +132,6 @@
 
     <!-- Fila Tabla de Tickets creados por usuarios con Razón y Prioridad -->
     <div class="tickets-section ion-margin-top">
-      <div class="section-toolbar">
-        <div class="section-title">
-          <ion-icon name="chatbubbles-outline" color="warning"></ion-icon>
-          <div>
-            <h2>Tickets Creados por Usuarios</h2>
-            <p>Supervisión de solicitudes con detalle de <strong>razón / motivo</strong> y <strong>prioridad</strong>.</p>
-          </div>
-        </div>
-
-        <div class="toolbar-actions">
-          <ion-button fill="outline" color="primary" (click)="exportTicketsCsv()">
-            <ion-icon slot="start" name="download-outline"></ion-icon>
-            Exportar CSV
-          </ion-button>
-        </div>
-      </div>
-
       <div class="table-container">
         <app-data-table
           title="Registro de Incidencias y Tickets de Usuarios"
@@ -159,7 +142,20 @@
           emptyMessage="No hay tickets de usuarios registrados."
           searchPlaceholder="Buscar por motivo, usuario, prioridad..."
           (actionClick)="onTicketAction($event)"
-        ></app-data-table>
+        >
+          <ion-button fill="outline" color="danger" size="small" (click)="deleteResolvedTickets()" title="Eliminar tickets resueltos">
+            <ion-icon slot="start" name="trash-outline"></ion-icon>
+            Borrar Resueltos
+          </ion-button>
+          <ion-button fill="solid" color="primary" size="small" (click)="exportTicketsPdf()" title="Exportar incidencias a PDF">
+            <ion-icon slot="start" name="document-text-outline"></ion-icon>
+            PDF
+          </ion-button>
+          <ion-button fill="outline" color="primary" size="small" (click)="exportTicketsCsv()" title="Exportar incidencias a CSV">
+            <ion-icon slot="start" name="download-outline"></ion-icon>
+            CSV
+          </ion-button>
+        </app-data-table>
       </div>
     </div>
   </div>
@@ -186,35 +182,9 @@
 
     <!-- Sub-vista 1: PRODUCTOS EN SUPABASE -->
     <div *ngIf="managementSubTab === 'products'" class="management-sub-panel ion-margin-top">
-      <div class="tab-toolbar">
-        <div class="toolbar-title">
-          <ion-icon name="cube-outline" color="success"></ion-icon>
-          <div>
-            <h3>Catálogo de Productos en Supabase</h3>
-            <p>Alta, modificación de precio/stock/descripción y eliminación sincronizada en Supabase.</p>
-          </div>
-        </div>
-
-        <div class="toolbar-actions">
-          <ion-button color="success" fill="solid" (click)="openNewProductModal()" class="action-btn-main">
-            <ion-icon slot="start" name="add-circle-outline"></ion-icon>
-            Añadir Producto
-          </ion-button>
-
-          <ion-button fill="outline" color="primary" (click)="exportProductsCsv()">
-            <ion-icon slot="start" name="download-outline"></ion-icon>
-            CSV
-          </ion-button>
-
-          <ion-button fill="clear" color="medium" (click)="loadProducts()" title="Recargar productos">
-            <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
-          </ion-button>
-        </div>
-      </div>
-
       <div class="table-container ion-margin-top">
         <app-data-table
-          title="Inventario de Productos (Edición y Eliminación directa en Supabase)"
+          title="Inventario de Productos (Supabase)"
           [data]="products"
           [columns]="productColumns"
           [actions]="productActions"
@@ -222,36 +192,35 @@
           emptyMessage="No hay productos en Supabase."
           searchPlaceholder="Buscar producto por nombre o categoría..."
           (actionClick)="onProductAction($event)"
-        ></app-data-table>
+        >
+          <ion-button color="success" fill="solid" size="small" (click)="openNewProductModal()">
+            <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+            Añadir Producto
+          </ion-button>
+          <ion-button fill="outline" color="danger" size="small" (click)="promptDeleteProduct()" title="Borrar producto">
+            <ion-icon slot="start" name="trash-outline"></ion-icon>
+            Borrar Producto
+          </ion-button>
+          <ion-button fill="solid" color="primary" size="small" (click)="exportProductsPdf()" title="Exportar catálogo a PDF">
+            <ion-icon slot="start" name="document-text-outline"></ion-icon>
+            PDF
+          </ion-button>
+          <ion-button fill="outline" color="primary" size="small" (click)="exportProductsCsv()" title="Exportar catálogo a CSV">
+            <ion-icon slot="start" name="download-outline"></ion-icon>
+            CSV
+          </ion-button>
+          <ion-button fill="clear" color="medium" size="small" (click)="loadProducts()" title="Recargar productos">
+            <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+          </ion-button>
+        </app-data-table>
       </div>
     </div>
 
     <!-- Sub-vista 2: CLIENTES EN SUPABASE -->
     <div *ngIf="managementSubTab === 'clients'" class="management-sub-panel ion-margin-top">
-      <div class="tab-toolbar">
-        <div class="toolbar-title">
-          <ion-icon name="people-outline" color="secondary"></ion-icon>
-          <div>
-            <h3>Directorio Maestro de Clientes en Supabase</h3>
-            <p>Alta, modificación de datos de contacto y empresa, y eliminación en la tabla 'clients'.</p>
-          </div>
-        </div>
-
-        <div class="toolbar-actions">
-          <ion-button color="secondary" fill="solid" (click)="openNewClientModal()" class="action-btn-main">
-            <ion-icon slot="start" name="person-add-outline"></ion-icon>
-            Añadir Cliente
-          </ion-button>
-
-          <ion-button fill="clear" color="medium" (click)="loadClients()" title="Recargar clientes">
-            <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
-          </ion-button>
-        </div>
-      </div>
-
       <div class="table-container ion-margin-top">
         <app-data-table
-          title="Listado de Clientes (Edición y Eliminación en Supabase)"
+          title="Directorio Maestro de Clientes (Supabase)"
           [data]="customers"
           [columns]="customerColumns"
           [actions]="customerActions"
@@ -259,7 +228,27 @@
           emptyMessage="No hay clientes registrados en Supabase."
           searchPlaceholder="Buscar cliente por nombre, empresa, email..."
           (actionClick)="onClientAction($event)"
-        ></app-data-table>
+        >
+          <ion-button color="secondary" fill="solid" size="small" (click)="openNewClientModal()">
+            <ion-icon slot="start" name="person-add-outline"></ion-icon>
+            Añadir Cliente
+          </ion-button>
+          <ion-button fill="outline" color="danger" size="small" (click)="promptDeleteClient()" title="Borrar cliente">
+            <ion-icon slot="start" name="trash-outline"></ion-icon>
+            Borrar Cliente
+          </ion-button>
+          <ion-button fill="solid" color="primary" size="small" (click)="exportClientsPdf()" title="Exportar clientes a PDF">
+            <ion-icon slot="start" name="document-text-outline"></ion-icon>
+            PDF
+          </ion-button>
+          <ion-button fill="outline" color="primary" size="small" (click)="exportClientsCsv()" title="Exportar clientes a CSV">
+            <ion-icon slot="start" name="download-outline"></ion-icon>
+            CSV
+          </ion-button>
+          <ion-button fill="clear" color="medium" size="small" (click)="loadClients()" title="Recargar clientes">
+            <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+          </ion-button>
+        </app-data-table>
       </div>
     </div>
   </div>

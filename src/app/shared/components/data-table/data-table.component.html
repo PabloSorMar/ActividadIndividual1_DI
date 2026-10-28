@@ -6,15 +6,21 @@
       <span class="records-count">{{ filteredData.length }} registros</span>
     </div>
 
-    <div class="search-box">
-      <ion-searchbar
-        [placeholder]="searchPlaceholder"
-        [value]="searchTerm"
-        (ionInput)="onSearchInput($event)"
-        [debounce]="250"
-        showClearButton="focus"
-        aria-label="Buscar en la tabla"
-      ></ion-searchbar>
+    <div class="toolbar-controls">
+      <div class="search-box">
+        <ion-searchbar
+          [placeholder]="searchPlaceholder"
+          [value]="searchTerm"
+          (ionInput)="onSearchInput($event)"
+          [debounce]="250"
+          showClearButton="focus"
+          aria-label="Buscar en la tabla"
+        ></ion-searchbar>
+      </div>
+
+      <div class="table-actions-slot">
+        <ng-content></ng-content>
+      </div>
     </div>
   </div>
 

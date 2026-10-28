@@ -45,16 +45,41 @@
     }
   }
 
-  .search-box {
+  .toolbar-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
     flex: 1;
-    max-width: 320px;
-    min-width: 220px;
+    justify-content: flex-end;
 
-    ion-searchbar {
-      padding: 0;
-      --border-radius: 12px;
-      --box-shadow: none;
-      --background: rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.04);
+    .search-box {
+      max-width: 280px;
+      min-width: 170px;
+      flex: 1;
+
+      ion-searchbar {
+        padding: 0;
+        --border-radius: 10px;
+        --box-shadow: none;
+        --background: rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.05);
+        min-height: 36px;
+      }
+    }
+
+    .table-actions-slot {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+
+      ion-button {
+        --border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.82rem;
+        height: 36px;
+        margin: 0;
+      }
     }
   }
 }

@@ -208,6 +208,14 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
       color: 'warning',
       fill: 'solid',
       showLabel: true
+    },
+    {
+      id: 'delete',
+      label: 'Borrar',
+      icon: 'trash-outline',
+      color: 'danger',
+      fill: 'outline',
+      showLabel: true
     }
   ];
 
@@ -221,8 +229,8 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   public productActions: TableAction<Product>[] = [
-    { id: 'edit', label: 'Modificar Producto', icon: 'create-outline', color: 'primary' },
-    { id: 'delete', label: 'Eliminar de Supabase', icon: 'trash-outline', color: 'danger' }
+    { id: 'edit', label: 'Modificar', icon: 'create-outline', color: 'primary', fill: 'outline', showLabel: true },
+    { id: 'delete', label: 'Borrar', icon: 'trash-outline', color: 'danger', fill: 'outline', showLabel: true }
   ];
 
   // 3. Tabla de Clientes (Gestión)
@@ -234,8 +242,8 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   public customerActions: TableAction<any>[] = [
-    { id: 'edit', label: 'Modificar Cliente', icon: 'create-outline', color: 'primary' },
-    { id: 'delete', label: 'Eliminar de Supabase', icon: 'trash-outline', color: 'danger' }
+    { id: 'edit', label: 'Modificar', icon: 'create-outline', color: 'primary', fill: 'outline', showLabel: true },
+    { id: 'delete', label: 'Borrar', icon: 'trash-outline', color: 'danger', fill: 'outline', showLabel: true }
   ];
 
   // =================== GETTERS COMPUTADOS ===================
@@ -493,6 +501,84 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
           toastColor
         );
       });
+    } else if (event.action === 'delete') {
+      this.deleteTicketRow(t);
+    }
+  }
+
+  public async deleteTicketRow(ticket: Ticket): Promise<void> {
+    const ok = await this.notificationService.showConfirm(
+      'Eliminar Incidencia',
+      `¿Deseas eliminar permanentemente el ticket ${ticket.id} ("${ticket.reason}")?`
+    );
+    if (ok) {
+      this.ticketService.deleteTicket(ticket.id).subscribe(() => {
+        this.notificationService.showToast(`Ticket ${ticket.id} eliminado correctamente`, 'warning');
+      });
+    }
+  }
+
+  public async deleteResolvedTickets(): Promise<void> {
+    const resolved = this.tickets.filter(t => t.status === 'resuelto');
+    if (resolved.length === 0) {
+      this.notificationService.showToast('No hay incidencias en estado "Resuelto" para borrar', 'warning');
+      return;
+    }
+    const ok = await this.notificationService.showConfirm(
+      'Borrar Incidencias Resueltas',
+      `¿Deseas eliminar permanentemente las ${resolved.length} incidencias marcadas como resueltas?`
+    );
+    if (ok) {
+      resolved.forEach(t => this.ticketService.deleteTicket(t.id).subscribe());
+      this.notificationService.showToast(`Se han eliminado ${resolved.length} incidencias resueltas`, 'success');
+    }
+  }
+
+  public async promptDeleteProduct(): Promise<void> {
+    if (this.products.length === 0) {
+      this.notificationService.showToast('No hay productos en inventario para borrar', 'warning');
+      return;
+    }
+    const prod = this.products[0];
+    const ok = await this.notificationService.showConfirm(
+      'Borrado de Producto',
+      `¿Deseas eliminar el primer producto del inventario: "${prod.name}"? (O usa el botón Borrar de cualquier fila)`
+    );
+    if (ok && prod.id) {
+      await this.notificationService.showLoading('Eliminando producto de Supabase...');
+      try {
+        await this.supabaseService.deleteProduct(prod.id);
+        await this.notificationService.dismissLoading();
+        await this.loadProducts();
+        this.notificationService.showToast(`Producto "${prod.name}" eliminado de Supabase`, 'warning');
+      } catch (e: any) {
+        await this.notificationService.dismissLoading();
+        this.notificationService.showToast('Error al eliminar producto: ' + e?.message, 'danger');
+      }
+    }
+  }
+
+  public async promptDeleteClient(): Promise<void> {
+    if (this.customers.length === 0) {
+      this.notificationService.showToast('No hay clientes registrados para borrar', 'warning');
+      return;
+    }
+    const cl = this.customers[0];
+    const ok = await this.notificationService.showConfirm(
+      'Borrado de Cliente',
+      `¿Deseas eliminar al primer cliente del directorio: "${cl.nombre}" (${cl.empresa})? (O usa el botón Borrar de cualquier fila)`
+    );
+    if (ok && cl.id) {
+      await this.notificationService.showLoading('Eliminando cliente de Supabase...');
+      try {
+        await this.supabaseService.deleteClient(cl.id);
+        await this.notificationService.dismissLoading();
+        await this.loadClients();
+        this.notificationService.showToast(`Cliente "${cl.nombre}" eliminado de Supabase`, 'warning');
+      } catch (e: any) {
+        await this.notificationService.dismissLoading();
+        this.notificationService.showToast('Error al eliminar cliente: ' + e?.message, 'danger');
+      }
     }
   }
 
@@ -711,6 +797,10 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
   // =================== EXPORTACIÓN ===================
 
   public exportTicketsCsv(): void {
+    if (this.tickets.length === 0) {
+      this.notificationService.showToast('No hay tickets para exportar a CSV', 'warning');
+      return;
+    }
     this.exportService.exportToCsv(
       `Tickets_Soporte_${new Date().toISOString().split('T')[0]}`,
       this.tickets,
@@ -727,7 +817,38 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
     this.notificationService.showToast('Informe CSV de tickets descargado correctamente', 'success');
   }
 
+  public exportTicketsPdf(): void {
+    if (this.tickets.length === 0) {
+      this.notificationService.showToast('No hay tickets para exportar a PDF', 'warning');
+      return;
+    }
+    this.exportService.exportToPdf({
+      title: 'Informe de Incidencias y Tickets de Soporte',
+      subtitle: `Registro oficial de solicitudes y estado técnico (${new Date().toLocaleDateString('es-ES')})`,
+      filename: `Tickets_Soporte_${new Date().toISOString().split('T')[0]}`,
+      kpis: [
+        { label: 'Total Tickets', value: String(this.tickets.length) },
+        { label: 'Pendientes', value: String(this.openTicketCount) },
+        { label: 'Urgentes', value: String(this.urgentTicketCount) },
+        { label: 'Resueltos', value: String(this.resolvedTicketCount) }
+      ],
+      columns: [
+        { header: 'ID', key: 'id' },
+        { header: 'Motivo / Razon', key: 'reason' },
+        { header: 'Prioridad', key: 'priority' },
+        { header: 'Solicitante', key: 'userName' },
+        { header: 'Estado', key: 'status' }
+      ],
+      rows: this.tickets
+    });
+    this.notificationService.showToast('Informe PDF de tickets generado y descargado', 'success');
+  }
+
   public exportProductsCsv(): void {
+    if (this.products.length === 0) {
+      this.notificationService.showToast('No hay productos para exportar a CSV', 'warning');
+      return;
+    }
     this.exportService.exportToCsv(
       `Productos_Supabase_${new Date().toISOString().split('T')[0]}`,
       this.products,
@@ -740,6 +861,72 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy {
       ]
     );
     this.notificationService.showToast('Informe CSV de productos descargado correctamente', 'success');
+  }
+
+  public exportProductsPdf(): void {
+    if (this.products.length === 0) {
+      this.notificationService.showToast('No hay productos para exportar a PDF', 'warning');
+      return;
+    }
+    this.exportService.exportToPdf({
+      title: 'Catálogo de Inventario de Productos',
+      subtitle: `Existencias y precios sincronizados en Supabase (${new Date().toLocaleDateString('es-ES')})`,
+      filename: `Productos_Supabase_${new Date().toISOString().split('T')[0]}`,
+      kpis: [
+        { label: 'Total Referencias', value: String(this.products.length) },
+        { label: 'Stock Acumulado', value: `${this.totalProductStock} uds` }
+      ],
+      columns: [
+        { header: 'Nombre', key: 'name' },
+        { header: 'Categoria', key: 'category' },
+        { header: 'Precio', key: 'price' },
+        { header: 'Stock', key: 'stock' },
+        { header: 'Descripcion', key: 'description' }
+      ],
+      rows: this.products
+    });
+    this.notificationService.showToast('Informe PDF de productos generado y descargado', 'success');
+  }
+
+  public exportClientsCsv(): void {
+    if (this.customers.length === 0) {
+      this.notificationService.showToast('No hay clientes para exportar a CSV', 'warning');
+      return;
+    }
+    this.exportService.exportToCsv(
+      `Clientes_Supabase_${new Date().toISOString().split('T')[0]}`,
+      this.customers,
+      [
+        { key: 'nombre', header: 'Nombre / Contacto' },
+        { key: 'empresa', header: 'Empresa / Razon Social' },
+        { key: 'email', header: 'Correo Electronico' },
+        { key: 'created_at', header: 'Fecha de Alta' }
+      ]
+    );
+    this.notificationService.showToast('Informe CSV de clientes descargado correctamente', 'success');
+  }
+
+  public exportClientsPdf(): void {
+    if (this.customers.length === 0) {
+      this.notificationService.showToast('No hay clientes para exportar a PDF', 'warning');
+      return;
+    }
+    this.exportService.exportToPdf({
+      title: 'Directorio Maestro de Clientes',
+      subtitle: `Registro de clientes corporativos sincronizados en Supabase (${new Date().toLocaleDateString('es-ES')})`,
+      filename: `Clientes_Supabase_${new Date().toISOString().split('T')[0]}`,
+      kpis: [
+        { label: 'Clientes Registrados', value: String(this.customers.length) }
+      ],
+      columns: [
+        { header: 'Nombre / Contacto', key: 'nombre' },
+        { header: 'Empresa / Razon Social', key: 'empresa' },
+        { header: 'Correo Electronico', key: 'email' },
+        { header: 'Fecha de Alta', key: 'created_at' }
+      ],
+      rows: this.customers
+    });
+    this.notificationService.showToast('Informe PDF de clientes generado y descargado', 'success');
   }
 
   public async openHelpModal(): Promise<void> {

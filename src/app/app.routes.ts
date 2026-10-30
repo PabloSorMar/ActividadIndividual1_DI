@@ -15,38 +15,38 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./pages/login/login.page').then(m => m.LoginPage),
-    title: 'Iniciar Sesión | NovaGestión'
+    title: 'Iniciar Sesión | ClieGestion'
   },
   {
     path: 'register',
     loadComponent: () => import('./pages/register/register.page').then(m => m.RegisterPage),
-    title: 'Nuevo Registro | NovaGestión'
+    title: 'Nuevo Registro | ClieGestion'
   },
   {
     path: 'admin-dashboard',
     loadComponent: () => import('./pages/admin-dashboard/admin-dashboard.page').then(m => m.AdminDashboardPage),
     canActivate: [authGuard],
     data: { role: 'admin' },
-    title: 'Cuadro de Mando Admin | NovaGestión'
+    title: 'Cuadro de Mando Admin | ClieGestion'
   },
   {
     path: 'management',
     loadComponent: () => import('./pages/management/management.page').then(m => m.ManagementPage),
     canActivate: [authGuard],
     data: { role: 'admin' },
-    title: 'Gestión de Entidades | NovaGestión'
+    title: 'Gestión de Entidades | ClieGestion'
   },
   {
     path: 'user-dashboard',
     loadComponent: () => import('./pages/user-dashboard/user-dashboard.page').then(m => m.UserDashboardPage),
     canActivate: [authGuard],
     data: { role: 'user' },
-    title: 'Portal de Usuario | NovaGestión'
+    title: 'Portal de Usuario | ClieGestion'
   },
   {
     path: 'unauthorized',
     loadComponent: () => import('./pages/unauthorized/unauthorized.page').then(m => m.UnauthorizedPage),
-    title: 'Acceso Restringido | NovaGestión'
+    title: 'Acceso Restringido | ClieGestion'
   },
   {
     path: '**',

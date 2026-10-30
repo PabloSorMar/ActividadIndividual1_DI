@@ -5,7 +5,7 @@ import { Ticket, TicketPriority, TicketStatus } from '../models/ticket.model';
 import { AuthService } from './auth.service';
 import { RealtimeDocService } from './realtime-doc.service';
 
-const TICKETS_STORAGE_KEY = 'novagestion_tickets_store';
+const TICKETS_STORAGE_KEY = 'cliegestion_tickets_store';
 
 @Injectable({
   providedIn: 'root'
@@ -76,7 +76,7 @@ export class TicketService {
   }
 
   private loadTickets(): void {
-    const saved = localStorage.getItem(TICKETS_STORAGE_KEY);
+    const saved = localStorage.getItem(TICKETS_STORAGE_KEY) || localStorage.getItem('novagestion_tickets_store');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -94,6 +94,7 @@ export class TicketService {
 
   private persist(): void {
     localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(this.ticketsSubject$.value));
+    localStorage.setItem('novagestion_tickets_store', JSON.stringify(this.ticketsSubject$.value));
   }
 
   /**

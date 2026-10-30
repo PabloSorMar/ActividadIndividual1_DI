@@ -4,8 +4,8 @@ import { delay, map, tap } from 'rxjs/operators';
 import { Customer, DashboardMetrics, Invoice, InvoiceStatus } from '../models/business.models';
 import { SupabaseService } from './supabase.service';
 
-const CUSTOMERS_KEY = 'novagestion_sql_customers';
-const INVOICES_KEY = 'novagestion_sql_invoices';
+const CUSTOMERS_KEY = 'cliegestion_sql_customers';
+const INVOICES_KEY = 'cliegestion_sql_invoices';
 
 /**
  * Servicio de Consumo Asíncrono de Fuente Relacional y Supabase (RA 5).
@@ -26,9 +26,10 @@ export class SqlDatabaseService {
   private seedDatabaseIfEmpty(): void {
     // Limpiamos cualquier caché con clientes de ejemplo previos
     localStorage.removeItem(CUSTOMERS_KEY);
+    localStorage.removeItem('novagestion_sql_customers');
     this.customers = [];
 
-    const savedInv = localStorage.getItem(INVOICES_KEY);
+    const savedInv = localStorage.getItem(INVOICES_KEY) || localStorage.getItem('novagestion_sql_invoices');
     if (savedInv) {
       try {
         this.invoices = JSON.parse(savedInv);

@@ -260,7 +260,7 @@ export class ManagementPage implements OnInit {
       this.exportService.exportToPdf({
         title: 'Listado Maestro de Clientes Corporativos',
         subtitle: `Total registrados: ${this.customers.length}`,
-        filename: `Clientes_NovaGestion_${Date.now()}`,
+        filename: `Clientes_ClieGestion_${Date.now()}`,
         columns: [
           { header: 'Cliente / Empresa', key: 'name' },
           { header: 'CIF/NIF', key: 'cif' },
@@ -279,7 +279,7 @@ export class ManagementPage implements OnInit {
       this.exportService.exportToPdf({
         title: 'Listado Detallado de Facturas',
         subtitle: `Total facturas: ${this.invoices.length}`,
-        filename: `Facturas_NovaGestion_${Date.now()}`,
+        filename: `Facturas_ClieGestion_${Date.now()}`,
         columns: [
           { header: 'Nº Factura', key: 'invoiceNumber' },
           { header: 'Cliente', key: 'customerName' },
@@ -300,7 +300,7 @@ export class ManagementPage implements OnInit {
 
   public exportActiveViewCsv(): void {
     if (this.activeTab === 'customers') {
-      this.exportService.exportToCsv('Clientes_NovaGestion', this.customers, [
+      this.exportService.exportToCsv('Clientes_ClieGestion', this.customers, [
         { key: 'name', header: 'Nombre' },
         { key: 'cif', header: 'CIF' },
         { key: 'email', header: 'Email' },
@@ -310,7 +310,7 @@ export class ManagementPage implements OnInit {
         { key: 'status', header: 'Estado' }
       ]);
     } else {
-      this.exportService.exportToCsv('Facturas_NovaGestion', this.invoices, [
+      this.exportService.exportToCsv('Facturas_ClieGestion', this.invoices, [
         { key: 'invoiceNumber', header: 'NumeroFactura' },
         { key: 'customerName', header: 'Cliente' },
         { key: 'date', header: 'Fecha' },

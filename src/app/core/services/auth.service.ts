@@ -4,7 +4,7 @@ import { delay, map, tap } from 'rxjs/operators';
 import { AuthState, LoginCredentials, RegisterDto, User, UserRole } from '../models/auth.models';
 import { SupabaseService } from './supabase.service';
 
-const STORAGE_KEY = 'novagestion_auth_session';
+const STORAGE_KEY = 'cliegestion_auth_session';
 
 /**
  * Servicio centralizado de Autenticación y Control de Acceso por Roles (RA 1 y RA 2).
@@ -21,9 +21,9 @@ export class AuthService {
     {
       id: 'de09a875-48b2-4242-b0ae-7f39df5a985e',
       email: 'admin@gmail.com',
-      name: 'Administrador (NovaGestión)',
+      name: 'Administrador (ClieGestion)',
       role: 'admin',
-      company: 'Nova Sistemas S.L.',
+      company: 'ClieGestion S.L.',
       dniCif: 'B87654321',
       phone: '+34 600 112 233',
       createdAt: '2026-01-10T08:00:00Z',
@@ -32,9 +32,9 @@ export class AuthService {
     {
       id: '6bd3c4d8-3a80-4e90-b438-a9abe02550a9',
       email: 'user@gmail.com',
-      name: 'Usuario Demo (NovaGestión)',
+      name: 'Usuario Demo (ClieGestion)',
       role: 'user',
-      company: 'Nova Sistemas S.L.',
+      company: 'ClieGestion S.L.',
       dniCif: '48991234F',
       phone: '+34 611 445 566',
       createdAt: '2026-02-15T09:30:00Z',
@@ -62,7 +62,7 @@ export class AuthService {
   }
 
   private initUsersDatabase(): void {
-    const saved = localStorage.getItem('novagestion_registered_users');
+    const saved = localStorage.getItem('cliegestion_registered_users') || localStorage.getItem('novagestion_registered_users');
     if (saved) {
       try {
         this.registeredUsers = JSON.parse(saved);
@@ -76,6 +76,7 @@ export class AuthService {
   }
 
   private persistUsers(): void {
+    localStorage.setItem('cliegestion_registered_users', JSON.stringify(this.registeredUsers));
     localStorage.setItem('novagestion_registered_users', JSON.stringify(this.registeredUsers));
   }
 
@@ -130,6 +131,7 @@ export class AuthService {
         if (sbRes.success && sbRes.user) {
           const userAvatar = sbRes.user.avatarUrl ||
             sbRes.user.user_metadata?.['avatar_url'] ||
+            localStorage.getItem('cliegestion_avatar_' + sbRes.user.id) ||
             localStorage.getItem('novagestion_avatar_' + sbRes.user.id) ||
             undefined;
 
@@ -139,7 +141,7 @@ export class AuthService {
             name: sbRes.user.name || (sbRes.role === 'admin' ? 'Administrador' : 'Usuario Demo'),
             role: sbRes.role,
             avatarUrl: userAvatar,
-            company: 'Nova Sistemas S.L.',
+            company: 'ClieGestion S.L.',
             createdAt: new Date().toISOString(),
             lastLogin: new Date().toISOString()
           };
@@ -162,14 +164,16 @@ export class AuthService {
         if ((normalizedEmail === 'admin@gmail.com' || normalizedEmail === 'user@gmail.com') && credentials.password === '123456') {
           const role = normalizedEmail === 'admin@gmail.com' ? 'admin' : 'user';
           const userId = role === 'admin' ? 'de09a875-48b2-4242-b0ae-7f39df5a985e' : '6bd3c4d8-3a80-4e90-b438-a9abe02550a9';
-          const userAvatar = localStorage.getItem('novagestion_avatar_' + userId) || undefined;
+          const userAvatar = localStorage.getItem('cliegestion_avatar_' + userId) ||
+            localStorage.getItem('novagestion_avatar_' + userId) ||
+            undefined;
           const user: User = {
             id: userId,
             email: normalizedEmail,
             name: role === 'admin' ? 'Administrador' : 'Usuario Demo',
             role: role,
             avatarUrl: userAvatar,
-            company: 'Nova Sistemas S.L.',
+            company: 'ClieGestion S.L.',
             createdAt: new Date().toISOString(),
             lastLogin: new Date().toISOString()
           };
@@ -298,6 +302,7 @@ export class AuthService {
     this.authState$.next(newState);
 
     try {
+      localStorage.setItem('cliegestion_avatar_' + current.id, avatarUrl);
       localStorage.setItem('novagestion_avatar_' + current.id, avatarUrl);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
       sessionStorage.setItem('DAM2_AUTH_SESSION', JSON.stringify(newState));

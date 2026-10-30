@@ -1,4 +1,4 @@
-# NovaGestión | Sistema de Gestión Empresarial Multiplataforma (PWA/Híbrida)
+# ClieGestion | Sistema de Gestión Empresarial Multiplataforma (PWA/Híbrida)
 
 **Módulo Profesional:** Desarrollo de Interfaces (Código: 0488)  
 **Ciclo Formativo:** Grado Superior en Desarrollo de Aplicaciones Multiplataforma (DAM)  
@@ -9,7 +9,7 @@
 
 ## 📋 Resumen Ejecutivo del Proyecto
 
-**NovaGestión** es una aplicación de gestión empresarial de última generación desarrollada con **Ionic Framework** y **Angular (Standalone Architecture)**. Cumple rigurosamente con todas las especificaciones y rúbricas evaluativas (Fases 1 a 5, RA 1 a RA 7) establecidas por la Comunidad de Madrid para el módulo de Desarrollo de Interfaces:
+**ClieGestion** es una aplicación de gestión empresarial de última generación desarrollada con **Ionic Framework** y **Angular (Standalone Architecture)**. Cumple rigurosamente con todas las especificaciones y rúbricas evaluativas (Fases 1 a 5, RA 1 a RA 7) establecidas por la Comunidad de Madrid para el módulo de Desarrollo de Interfaces:
 
 1. **Arquitectura y Enrutamiento Declarativo (RA 1 y RA 2):** Navegación global mediante menú lateral adaptable (*Side Menu* con *Split Pane*), carga diferida (*Lazy Loading* modular), protección de rutas basada en Guards funcionales con dos roles diferenciados (`Administrador` y `Usuario Estándar`).
 2. **Formularios Reactivos y Validaciones Asíncronas (RA 2):** Pantallas de Login y Registro con validaciones asíncronas en tiempo real contra servicio (comprobación de disponibilidad de correo electrónico y DNI/CIF con simulación de latencia de red y estados UX).

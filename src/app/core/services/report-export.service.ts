@@ -79,7 +79,7 @@ export class ReportExportService {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
-    doc.text('NOVAGESTIÓN | SISTEMA DE GESTIÓN EMPRESARIAL', 14, 12);
+    doc.text('CLIEGESTION | SISTEMA DE GESTIÓN EMPRESARIAL', 14, 12);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -186,7 +186,7 @@ export class ReportExportService {
       doc.setFontSize(8);
       doc.setTextColor(148, 163, 184);
       doc.text(
-        `Documento generado automáticamente por NovaGestión PWA - Página ${i} de ${pageCount}`,
+        `Documento generado automáticamente por ClieGestion PWA - Página ${i} de ${pageCount}`,
         pageWidth / 2,
         290,
         { align: 'center' }

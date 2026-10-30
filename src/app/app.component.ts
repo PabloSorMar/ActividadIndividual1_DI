@@ -76,7 +76,7 @@ export class AppComponent implements OnInit {
   }
 
   private initTheme(): void {
-    const saved = localStorage.getItem('novagestion_theme');
+    const saved = localStorage.getItem('cliegestion_theme') || localStorage.getItem('novagestion_theme');
     // Requerimiento: El tema inicial debe ser oscuro por defecto
     const isDark = saved !== 'light';
     this.isDarkMode = isDark;
@@ -94,11 +94,13 @@ export class AppComponent implements OnInit {
     if (this.isDarkMode) {
       document.body.classList.add('ion-palette-dark');
       document.documentElement.classList.add('dark');
+      localStorage.setItem('cliegestion_theme', 'dark');
       localStorage.setItem('novagestion_theme', 'dark');
       this.notification.showToast('Modo oscuro activado', 'medium', 1500);
     } else {
       document.body.classList.remove('ion-palette-dark');
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('cliegestion_theme', 'light');
       localStorage.setItem('novagestion_theme', 'light');
       this.notification.showToast('Modo claro activado', 'medium', 1500);
     }

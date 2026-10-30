@@ -4,7 +4,7 @@ import { environment } from '../../../environments/environment';
 import { Product } from '../models/product.model';
 import { RegisterDto } from '../models/auth.models';
 
-const STORAGE_PRODUCTS_KEY = 'novagestion_supabase_products_cache';
+const STORAGE_PRODUCTS_KEY = 'cliegestion_supabase_products_cache';
 
 /**
  * Servicio de Integración con Supabase (Auth, Clientes y Productos).
@@ -24,7 +24,7 @@ export class SupabaseService {
 
   private initSupabaseClient(): void {
     try {
-      const savedKey = localStorage.getItem('novagestion_supabase_key');
+      const savedKey = localStorage.getItem('cliegestion_supabase_key') || localStorage.getItem('novagestion_supabase_key');
       if (savedKey && (!environment.supabaseKey || environment.supabaseKey === 'TU_SUPABASE_ANON_KEY')) {
         environment.supabaseKey = savedKey;
       }
@@ -75,6 +75,7 @@ export class SupabaseService {
   public setAnonKey(key: string): void {
     const cleanKey = key.trim();
     environment.supabaseKey = cleanKey;
+    localStorage.setItem('cliegestion_supabase_key', cleanKey);
     localStorage.setItem('novagestion_supabase_key', cleanKey);
     this.supabase = createClient(environment.supabaseUrl, cleanKey);
   }
@@ -574,7 +575,7 @@ export class SupabaseService {
       return product.imageUrl;
     }
     if (product.id) {
-      const cached = localStorage.getItem('novagestion_product_img_' + product.id);
+      const cached = localStorage.getItem('cliegestion_product_img_' + product.id) || localStorage.getItem('novagestion_product_img_' + product.id);
       if (cached) return cached;
     }
     return this.getProductImageUrlFromBucket(product.id || encodeURIComponent(product.name.toLowerCase().replace(/\s+/g, '-')));
@@ -590,6 +591,7 @@ export class SupabaseService {
 
     if (!this.isConfigured() || !this.supabase) {
       const base64 = await this.fileToBase64(file);
+      localStorage.setItem('cliegestion_avatar_' + userId, base64);
       localStorage.setItem('novagestion_avatar_' + userId, base64);
       return { success: false, url: base64, error: 'Supabase no inicializado.' };
     }
@@ -606,6 +608,7 @@ export class SupabaseService {
       if (uploadError) {
         console.warn('Subida a bucket perfiles de Supabase:', uploadError.message);
         const base64 = await this.fileToBase64(file);
+        localStorage.setItem('cliegestion_avatar_' + userId, base64);
         localStorage.setItem('novagestion_avatar_' + userId, base64);
         return { success: false, url: base64, error: uploadError.message };
       }
@@ -631,11 +634,13 @@ export class SupabaseService {
         await this.supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
       } catch {}
 
+      localStorage.setItem('cliegestion_avatar_' + userId, publicUrl);
       localStorage.setItem('novagestion_avatar_' + userId, publicUrl);
       return { success: true, url: publicUrl };
     } catch (err: any) {
       console.warn('Excepción subiendo avatar a Supabase Storage:', err);
       const base64 = await this.fileToBase64(file);
+      localStorage.setItem('cliegestion_avatar_' + userId, base64);
       localStorage.setItem('novagestion_avatar_' + userId, base64);
       return { success: false, url: base64, error: err?.message || 'Error de red' };
     }
@@ -650,6 +655,7 @@ export class SupabaseService {
 
     if (!this.isConfigured() || !this.supabase) {
       const base64 = await this.fileToBase64(file);
+      localStorage.setItem('cliegestion_product_img_' + productId, base64);
       localStorage.setItem('novagestion_product_img_' + productId, base64);
       return { success: false, url: base64, error: 'Supabase no inicializado.' };
     }
@@ -665,6 +671,7 @@ export class SupabaseService {
       if (uploadError) {
         console.warn('Subida a bucket galeria de Supabase:', uploadError.message);
         const base64 = await this.fileToBase64(file);
+        localStorage.setItem('cliegestion_product_img_' + productId, base64);
         localStorage.setItem('novagestion_product_img_' + productId, base64);
         return { success: false, url: base64, error: uploadError.message };
       }
@@ -674,11 +681,13 @@ export class SupabaseService {
         .getPublicUrl(fileName);
 
       const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+      localStorage.setItem('cliegestion_product_img_' + productId, publicUrl);
       localStorage.setItem('novagestion_product_img_' + productId, publicUrl);
       return { success: true, url: publicUrl };
     } catch (err: any) {
       console.warn('Excepción subiendo imagen a bucket galeria:', err);
       const base64 = await this.fileToBase64(file);
+      localStorage.setItem('cliegestion_product_img_' + productId, base64);
       localStorage.setItem('novagestion_product_img_' + productId, base64);
       return { success: false, url: base64, error: err?.message || 'Error de conexión' };
     }

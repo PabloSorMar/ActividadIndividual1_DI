@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, NgZone } from '@angular/core';
+/*  */import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, NgZone, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
@@ -80,6 +80,14 @@ export class UserDashboardPage implements OnInit, OnDestroy, ViewWillEnter {
 
   public myTickets: Ticket[] = [];
   public isSubmittingTicket: boolean = false;
+
+  // Gestión de Foto de Perfil (Supabase Storage: bucket 'perfiles')
+  @ViewChild('avatarFileInput') public avatarFileInput?: ElementRef<HTMLInputElement>;
+  public isUploadingAvatar: boolean = false;
+
+  public get currentUserAvatar(): string {
+    return this.authService.getCurrentUser()?.avatarUrl || '';
+  }
 
   private ticketsSub?: Subscription;
   private supabaseChannel?: any;
@@ -211,6 +219,105 @@ export class UserDashboardPage implements OnInit, OnDestroy, ViewWillEnter {
         this.notification.showToast('No se pudo crear el ticket. Inténtalo de nuevo.', 'danger');
       }
     });
+  }
+
+  // =================== FOTO DE PERFIL (BUCKET 'perfiles') ===================
+
+  public triggerAvatarUpload(): void {
+    this.avatarFileInput?.nativeElement.click();
+  }
+
+  public async onAvatarFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.notification.showToast('Por favor, selecciona un archivo de imagen (JPG, PNG o WebP).', 'warning');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.notification.showToast('La imagen es demasiado grande. Tamaño máximo: 5 MB.', 'warning');
+      return;
+    }
+
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      this.notification.showToast('No se detectó un usuario autenticado activo.', 'warning');
+      return;
+    }
+
+    this.isUploadingAvatar = true;
+    this.cdr.detectChanges();
+
+    try {
+      const res = await this.supabaseService.uploadProfilePhoto(file, currentUser.id);
+      this.authService.updateCurrentUserAvatar(res.url);
+
+      this.ngZone.run(() => {
+        this.isUploadingAvatar = false;
+        this.cdr.detectChanges();
+      });
+
+      if (res.success) {
+        this.notification.showToast('¡Foto de perfil actualizada y guardada en el bucket "perfiles" de Supabase!', 'success');
+      } else {
+        this.notification.showToast('Foto guardada en tu perfil local. Recuerda crear el bucket "perfiles" en Supabase.', 'warning');
+      }
+    } catch (err: any) {
+      this.ngZone.run(() => {
+        this.isUploadingAvatar = false;
+        this.cdr.detectChanges();
+      });
+      this.notification.showToast('Error al procesar la foto de perfil: ' + (err?.message || ''), 'danger');
+    } finally {
+      input.value = '';
+    }
+  }
+
+  public onAvatarLoadError(): void {
+    // Si la imagen falla al cargar
+  }
+
+  // =================== FOTOS DE PRODUCTOS (BUCKET 'galeria') ===================
+
+  public getProductImageUrl(product: Product): string {
+    return this.supabaseService.getProductImageUrl(product);
+  }
+
+  public onProductImageError(event: Event, product: Product): void {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.onerror = null; // Prevenir ciclo de eventos
+      target.src = this.getFallbackProductSvg(product);
+    }
+  }
+
+  public getFallbackProductSvg(product: Product): string {
+    const title = (product.name || 'Producto').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const category = (product.category || 'Hardware').toUpperCase();
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="400" height="220" viewBox="0 0 400 220">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+          </linearGradient>
+          <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#3880ff;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#2dd36f;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <rect width="400" height="220" fill="url(#grad)" rx="12" />
+        <circle cx="200" cy="85" r="42" fill="rgba(56, 128, 255, 0.12)" />
+        <path d="M185 85 L200 68 L215 85 L200 102 Z" fill="url(#accent)" />
+        <circle cx="200" cy="85" r="8" fill="#ffffff" />
+        <text x="200" y="145" text-anchor="middle" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="14" font-weight="600">${title}</text>
+        <text x="200" y="168" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11" letter-spacing="1.5">${category} • STORAGE GALERIA</text>
+      </svg>
+    `.trim();
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }
 
   public async openHelpModal(): Promise<void> {

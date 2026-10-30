@@ -18,6 +18,54 @@
     </div>
   </div>
 
+  <!-- Tarjeta de Perfil de Usuario con Foto en Supabase Storage (bucket perfiles) -->
+  <div class="user-profile-banner-card ion-margin-bottom">
+    <div class="avatar-interactive-wrapper" (click)="triggerAvatarUpload()" title="Haz clic para subir o cambiar tu foto de perfil">
+      <img
+        *ngIf="currentUserAvatar"
+        [src]="currentUserAvatar"
+        (error)="onAvatarLoadError()"
+        alt="Foto de perfil"
+        class="profile-avatar-img"
+      />
+      <div *ngIf="!currentUserAvatar" class="profile-avatar-fallback">
+        <ion-icon name="person"></ion-icon>
+      </div>
+      <div class="avatar-overlay">
+        <ion-icon name="camera"></ion-icon>
+      </div>
+      <ion-spinner *ngIf="isUploadingAvatar" name="crescent" class="avatar-loading-spinner"></ion-spinner>
+    </div>
+
+    <!-- Input invisible para selección de archivo de foto -->
+    <input
+      #avatarFileInput
+      type="file"
+      accept="image/png,image/jpeg,image/webp,image/gif"
+      (change)="onAvatarFileSelected($event)"
+      style="display: none;"
+    />
+
+    <div class="user-profile-info">
+      <div class="user-name-title-row">
+        <h2>{{ authService.getCurrentUser()?.name }}</h2>
+        <span class="storage-badge" title="Foto sincronizada con Supabase Storage">
+          <ion-icon name="cloud-done-outline"></ion-icon>
+          Storage: <strong>perfiles</strong>
+        </span>
+      </div>
+      <p class="user-email-subtitle">{{ authService.getCurrentUser()?.email }}</p>
+
+      <div class="avatar-btn-row">
+        <ion-button size="small" fill="outline" color="primary" (click)="triggerAvatarUpload()" [disabled]="isUploadingAvatar">
+          <ion-icon slot="start" [name]="isUploadingAvatar ? 'hourglass-outline' : 'cloud-upload-outline'"></ion-icon>
+          {{ isUploadingAvatar ? 'Subiendo a bucket perfiles...' : (currentUserAvatar ? 'Cambiar Foto de Perfil' : 'Subir Foto de Perfil') }}
+        </ion-button>
+        <span class="photo-storage-hint">Formatos: JPG, PNG o WebP. Guardado en bucket <code>perfiles</code> de Supabase.</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Métricas Rápidas -->
   <ion-grid class="ion-no-padding stats-grid">
     <ion-row>
@@ -88,6 +136,21 @@
         </div>
 
         <div *ngFor="let p of filteredProducts" class="product-item-card">
+          <!-- Fotografía del Producto (Supabase Storage: bucket 'galeria') -->
+          <div class="product-image-container">
+            <img
+              [src]="getProductImageUrl(p)"
+              (error)="onProductImageError($event, p)"
+              [alt]="p.name"
+              class="product-image"
+              loading="lazy"
+            />
+            <span class="product-storage-tag" title="Fotografía vinculada a Supabase Storage (bucket galeria)">
+              <ion-icon name="images-outline"></ion-icon>
+              galeria
+            </span>
+          </div>
+
           <div class="product-card-top">
             <span class="product-category-tag">{{ p.category || 'General' }}</span>
             <span class="product-price">{{ p.price | currency:'EUR':'symbol':'1.2-2':'es' }}</span>

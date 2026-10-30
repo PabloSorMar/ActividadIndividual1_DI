@@ -128,11 +128,17 @@ export class AuthService {
     return from(this.supabaseService.loginWithSupabase(credentials.email, credentials.password)).pipe(
       map((sbRes) => {
         if (sbRes.success && sbRes.user) {
+          const userAvatar = sbRes.user.avatarUrl ||
+            sbRes.user.user_metadata?.['avatar_url'] ||
+            localStorage.getItem('novagestion_avatar_' + sbRes.user.id) ||
+            undefined;
+
           const user: User = {
             id: sbRes.user.id,
             email: normalizedEmail,
             name: sbRes.user.name || (sbRes.role === 'admin' ? 'Administrador' : 'Usuario Demo'),
             role: sbRes.role,
+            avatarUrl: userAvatar,
             company: 'Nova Sistemas S.L.',
             createdAt: new Date().toISOString(),
             lastLogin: new Date().toISOString()
@@ -155,11 +161,14 @@ export class AuthService {
         // Fallback para credenciales admin@gmail.com / user@gmail.com si Supabase experimenta latencia o error de red
         if ((normalizedEmail === 'admin@gmail.com' || normalizedEmail === 'user@gmail.com') && credentials.password === '123456') {
           const role = normalizedEmail === 'admin@gmail.com' ? 'admin' : 'user';
+          const userId = role === 'admin' ? 'de09a875-48b2-4242-b0ae-7f39df5a985e' : '6bd3c4d8-3a80-4e90-b438-a9abe02550a9';
+          const userAvatar = localStorage.getItem('novagestion_avatar_' + userId) || undefined;
           const user: User = {
-            id: role === 'admin' ? 'de09a875-48b2-4242-b0ae-7f39df5a985e' : '6bd3c4d8-3a80-4e90-b438-a9abe02550a9',
+            id: userId,
             email: normalizedEmail,
             name: role === 'admin' ? 'Administrador' : 'Usuario Demo',
             role: role,
+            avatarUrl: userAvatar,
             company: 'Nova Sistemas S.L.',
             createdAt: new Date().toISOString(),
             lastLogin: new Date().toISOString()
@@ -271,5 +280,35 @@ export class AuthService {
       currentUser: null,
       token: null
     });
+  }
+
+  /**
+   * Actualiza el avatar de perfil del usuario activo (reactivo en toda la app y persistente)
+   */
+  public updateCurrentUserAvatar(avatarUrl: string): void {
+    const current = this.authState$.value.currentUser;
+    if (!current) return;
+
+    const updatedUser: User = { ...current, avatarUrl };
+    const newState: AuthState = {
+      ...this.authState$.value,
+      currentUser: updatedUser
+    };
+
+    this.authState$.next(newState);
+
+    try {
+      localStorage.setItem('novagestion_avatar_' + current.id, avatarUrl);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+      sessionStorage.setItem('DAM2_AUTH_SESSION', JSON.stringify(newState));
+    } catch (e) {
+      console.warn('Error guardando avatar en storage local:', e);
+    }
+
+    const idx = this.registeredUsers.findIndex(u => u.id === current.id);
+    if (idx !== -1) {
+      this.registeredUsers[idx].avatarUrl = avatarUrl;
+      this.persistUsers();
+    }
   }
 }

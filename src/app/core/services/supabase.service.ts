@@ -312,15 +312,20 @@ export class SupabaseService {
 
         if (!error && data) {
           // Mapeo según el esquema real de Supabase (nombre, descripcion, precio, stock)
-          const mapped: Product[] = data.map((item: any) => ({
-            id: item.id,
-            name: item.nombre || item.name || 'Producto sin nombre',
-            price: Number(item.precio ?? item.price ?? 0),
-            stock: Number(item.stock ?? 0),
-            category: item.categoria || item.category || 'General',
-            description: item.descripcion || item.description || '',
-            created_at: item.created_at || new Date().toISOString()
-          }));
+          const mapped: Product[] = data.map((item: any) => {
+            const prodId = item.id;
+            const storageImg = this.getProductImageUrlFromBucket(prodId);
+            return {
+              id: prodId,
+              name: item.nombre || item.name || 'Producto sin nombre',
+              price: Number(item.precio ?? item.price ?? 0),
+              stock: Number(item.stock ?? 0),
+              category: item.categoria || item.category || 'General',
+              description: item.descripcion || item.description || '',
+              imageUrl: item.image_url || item.imageUrl || item.imagen || storageImg,
+              created_at: item.created_at || new Date().toISOString()
+            };
+          });
           try {
             localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(mapped));
           } catch {}
@@ -543,5 +548,151 @@ export class SupabaseService {
       throw new Error(error.message);
     }
     return true;
+  }
+
+  // =================== SUPABASE STORAGE (BUCKETS 'perfiles' Y 'galeria') ===================
+
+  public readonly BUCKET_PROFILES = 'perfiles';
+  public readonly BUCKET_GALLERY = 'galeria';
+
+  /**
+   * Obtiene la URL pública de una imagen de producto alojada en el bucket 'galeria'
+   */
+  public getProductImageUrlFromBucket(productIdOrName?: string): string {
+    if (!productIdOrName) return '';
+    if (this.isConfigured() && environment.supabaseUrl) {
+      return `${environment.supabaseUrl}/storage/v1/object/public/${this.BUCKET_GALLERY}/${productIdOrName}.png`;
+    }
+    return '';
+  }
+
+  /**
+   * Resuelve la URL de imagen del producto (prioridad: URL directa, localStorage o bucket galeria de Supabase)
+   */
+  public getProductImageUrl(product: Product): string {
+    if (product.imageUrl && (product.imageUrl.startsWith('http') || product.imageUrl.startsWith('data:'))) {
+      return product.imageUrl;
+    }
+    if (product.id) {
+      const cached = localStorage.getItem('novagestion_product_img_' + product.id);
+      if (cached) return cached;
+    }
+    return this.getProductImageUrlFromBucket(product.id || encodeURIComponent(product.name.toLowerCase().replace(/\s+/g, '-')));
+  }
+
+  /**
+   * Sube una foto de perfil al bucket 'perfiles' de Supabase Storage.
+   * Si el bucket o RLS aún no están configurados en Supabase, guarda un respaldo local en Base64.
+   */
+  public async uploadProfilePhoto(file: File, userId: string): Promise<{ success: boolean; url: string; error?: string }> {
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'png';
+    const fileName = `${userId}.${fileExt}`;
+
+    if (!this.isConfigured() || !this.supabase) {
+      const base64 = await this.fileToBase64(file);
+      localStorage.setItem('novagestion_avatar_' + userId, base64);
+      return { success: false, url: base64, error: 'Supabase no inicializado.' };
+    }
+
+    try {
+      // 1. Subida al bucket 'perfiles' en Supabase Storage
+      const { error: uploadError } = await this.supabase.storage
+        .from(this.BUCKET_PROFILES)
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.warn('Subida a bucket perfiles de Supabase:', uploadError.message);
+        const base64 = await this.fileToBase64(file);
+        localStorage.setItem('novagestion_avatar_' + userId, base64);
+        return { success: false, url: base64, error: uploadError.message };
+      }
+
+      // 2. Obtener URL pública desde el bucket 'perfiles'
+      const { data } = this.supabase.storage
+        .from(this.BUCKET_PROFILES)
+        .getPublicUrl(fileName);
+
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+
+      // 3. Actualizar metadatos del usuario en Supabase Auth
+      try {
+        await this.supabase.auth.updateUser({
+          data: { avatar_url: publicUrl }
+        });
+      } catch (authErr) {
+        console.warn('No se pudo actualizar avatar_url en auth.updateUser:', authErr);
+      }
+
+      // 4. Actualizar tabla profiles si existe
+      try {
+        await this.supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
+      } catch {}
+
+      localStorage.setItem('novagestion_avatar_' + userId, publicUrl);
+      return { success: true, url: publicUrl };
+    } catch (err: any) {
+      console.warn('Excepción subiendo avatar a Supabase Storage:', err);
+      const base64 = await this.fileToBase64(file);
+      localStorage.setItem('novagestion_avatar_' + userId, base64);
+      return { success: false, url: base64, error: err?.message || 'Error de red' };
+    }
+  }
+
+  /**
+   * Sube una fotografía de producto al bucket 'galeria' de Supabase Storage.
+   */
+  public async uploadProductPhoto(file: File, productId: string): Promise<{ success: boolean; url: string; error?: string }> {
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'png';
+    const fileName = `${productId}.${fileExt}`;
+
+    if (!this.isConfigured() || !this.supabase) {
+      const base64 = await this.fileToBase64(file);
+      localStorage.setItem('novagestion_product_img_' + productId, base64);
+      return { success: false, url: base64, error: 'Supabase no inicializado.' };
+    }
+
+    try {
+      const { error: uploadError } = await this.supabase.storage
+        .from(this.BUCKET_GALLERY)
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.warn('Subida a bucket galeria de Supabase:', uploadError.message);
+        const base64 = await this.fileToBase64(file);
+        localStorage.setItem('novagestion_product_img_' + productId, base64);
+        return { success: false, url: base64, error: uploadError.message };
+      }
+
+      const { data } = this.supabase.storage
+        .from(this.BUCKET_GALLERY)
+        .getPublicUrl(fileName);
+
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+      localStorage.setItem('novagestion_product_img_' + productId, publicUrl);
+      return { success: true, url: publicUrl };
+    } catch (err: any) {
+      console.warn('Excepción subiendo imagen a bucket galeria:', err);
+      const base64 = await this.fileToBase64(file);
+      localStorage.setItem('novagestion_product_img_' + productId, base64);
+      return { success: false, url: base64, error: err?.message || 'Error de conexión' };
+    }
+  }
+
+  /**
+   * Convierte un archivo local File en Base64 Data URL (para vista previa y respaldo local instantáneo)
+   */
+  public fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
   }
 }

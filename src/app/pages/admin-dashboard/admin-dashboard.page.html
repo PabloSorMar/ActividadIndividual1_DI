@@ -314,6 +314,21 @@
                 <ion-input formControlName="description" placeholder="Detalles de hardware, características..."></ion-input>
               </ion-item>
             </div>
+
+            <div class="modal-field">
+              <ion-item lines="none" class="modal-input-item">
+                <ion-label position="stacked">Fotografía del Producto (Bucket 'galeria')</ion-label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  (change)="onProductPhotoSelected($event)"
+                  style="margin-top: 8px; font-size: 0.85rem;"
+                />
+              </ion-item>
+              <div *ngIf="selectedProductPhotoFile" class="file-chosen-hint" style="font-size: 0.78rem; color: var(--ion-color-primary); margin-top: 4px;">
+                <ion-icon name="image-outline"></ion-icon> Imagen lista para subir: {{ selectedProductPhotoFile.name }}
+              </div>
+            </div>
           </div>
 
           <div class="modal-form-actions ion-margin-top">
@@ -390,6 +405,21 @@
                 <ion-label position="stacked">Descripción</ion-label>
                 <ion-input formControlName="description"></ion-input>
               </ion-item>
+            </div>
+
+            <div class="modal-field">
+              <ion-item lines="none" class="modal-input-item">
+                <ion-label position="stacked">Actualizar Foto (Bucket 'galeria')</ion-label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  (change)="onProductPhotoSelected($event)"
+                  style="margin-top: 8px; font-size: 0.85rem;"
+                />
+              </ion-item>
+              <div *ngIf="selectedProductPhotoFile" class="file-chosen-hint" style="font-size: 0.78rem; color: var(--ion-color-primary); margin-top: 4px;">
+                <ion-icon name="image-outline"></ion-icon> Imagen lista para actualizar: {{ selectedProductPhotoFile.name }}
+              </div>
             </div>
           </div>
 

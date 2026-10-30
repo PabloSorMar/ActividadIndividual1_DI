@@ -701,7 +701,17 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, Vie
 
   // =================== GESTIÓN DE PRODUCTOS (SUPABASE) ===================
 
+  public selectedProductPhotoFile: File | null = null;
+
+  public onProductPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files?.[0]) {
+      this.selectedProductPhotoFile = input.files[0];
+    }
+  }
+
   public openNewProductModal(): void {
+    this.selectedProductPhotoFile = null;
     this.productForm.reset({
       name: '',
       category: 'Hardware',
@@ -730,6 +740,12 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, Vie
         description: val.description || ''
       });
 
+      // Subida de imagen a Supabase Storage (bucket 'galeria') si se seleccionó archivo
+      if (this.selectedProductPhotoFile && added.id) {
+        await this.supabaseService.uploadProductPhoto(this.selectedProductPhotoFile, added.id);
+        this.selectedProductPhotoFile = null;
+      }
+
       await this.notificationService.dismissLoading();
       this.isProductModalOpen = false;
       await this.loadProducts();
@@ -744,6 +760,7 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, Vie
 
   public openEditProductModal(prod: Product): void {
     this.selectedProduct = prod;
+    this.selectedProductPhotoFile = null;
     this.editProductForm.patchValue({
       name: prod.name,
       category: prod.category || 'Hardware',
@@ -771,6 +788,12 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, Vie
         stock: Number(val.stock),
         description: val.description || ''
       });
+
+      // Subida o reemplazo de imagen en el bucket 'galeria' si se seleccionó archivo
+      if (this.selectedProductPhotoFile && this.selectedProduct.id) {
+        await this.supabaseService.uploadProductPhoto(this.selectedProductPhotoFile, this.selectedProduct.id);
+        this.selectedProductPhotoFile = null;
+      }
 
       await this.notificationService.dismissLoading();
       this.isEditProductModalOpen = false;

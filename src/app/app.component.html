@@ -64,6 +64,25 @@
             </ion-menu-toggle>
           </ng-container>
 
+          <!-- Sección Empresa y Asistencia -->
+          <div class="list-section-header">
+            <span>EMPRESA Y ASISTENCIA</span>
+          </div>
+
+          <ion-menu-toggle auto-hide="false">
+            <ion-item routerLink="/about" routerDirection="root" routerLinkActive="selected" class="nav-item">
+              <ion-icon slot="start" name="information-circle-outline"></ion-icon>
+              <ion-label>Sobre Nosotros</ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+
+          <ion-menu-toggle auto-hide="false">
+            <ion-item routerLink="/contact" routerDirection="root" routerLinkActive="selected" class="nav-item">
+              <ion-icon slot="start" name="mail-outline"></ion-icon>
+              <ion-label>Contacto & Soporte</ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+
           <div class="list-section-header">
             <span>SISTEMA Y SOPORTE</span>
           </div>
@@ -74,22 +93,6 @@
             <ion-label>Manual de Usuario (RA 6)</ion-label>
             <ion-badge slot="end" color="secondary">Guía</ion-badge>
           </ion-item>
-
-          <!-- Selector de Modo Oscuro / Claro Estilizado -->
-          <div class="menu-theme-card" (click)="toggleTheme()" role="button" tabindex="0" [attr.aria-label]="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
-            <div class="theme-card-left">
-              <div class="theme-orb-icon" [class.is-dark]="isDarkMode">
-                <ion-icon [name]="isDarkMode ? 'moon' : 'sunny'"></ion-icon>
-              </div>
-              <div class="theme-card-texts">
-                <span class="theme-card-title">Tema Visual</span>
-                <span class="theme-card-sub">{{ isDarkMode ? 'Modo Oscuro (Activo)' : 'Modo Claro (Activo)' }}</span>
-              </div>
-            </div>
-            <div class="theme-switch-slider" [class.checked]="isDarkMode">
-              <div class="switch-handle"></div>
-            </div>
-          </div>
         </ion-list>
       </ion-content>
 

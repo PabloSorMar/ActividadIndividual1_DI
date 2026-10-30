@@ -11,9 +11,7 @@ import {
   IonCheckbox,
   IonSpinner,
   IonCard,
-  IonCardContent,
-  IonSelect,
-  IonSelectOption
+  IonCardContent
 } from '@ionic/angular';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -39,9 +37,7 @@ import { UserRole } from '../../core/models/auth.models';
     IonCheckbox,
     IonSpinner,
     IonCard,
-    IonCardContent,
-    IonSelect,
-    IonSelectOption
+    IonCardContent
   ],
   templateUrl: './register.page.html',
   styleUrls: ['./register.page.scss']
@@ -121,7 +117,7 @@ export class RegisterPage {
         dniCif: val.dniCif,
         companyName: val.companyName,
         phone: val.phone,
-        role: val.role,
+        role: 'user',
         password: val.password,
         acceptTerms: val.acceptTerms
       })
@@ -133,11 +129,7 @@ export class RegisterPage {
               `¡Registro completado! Bienvenido ${res.user.name}`,
               'success'
             );
-            if (res.user.role === 'admin') {
-              this.router.navigate(['/admin-dashboard']);
-            } else {
-              this.router.navigate(['/user-dashboard']);
-            }
+            this.router.navigate(['/user-dashboard']);
           } else {
             this.errorMessage = res.message;
           }

@@ -125,22 +125,6 @@
               </ion-item>
             </div>
 
-            <!-- Selección de Rol de Acceso -->
-            <div class="form-group">
-              <ion-item lines="none" class="custom-input-item select-item">
-                <ion-icon name="shield-half-outline" slot="start" aria-hidden="true"></ion-icon>
-                <ion-select
-                  label="Rol en el Sistema"
-                  labelPlacement="floating"
-                  formControlName="role"
-                  interface="popover"
-                >
-                  <ion-select-option value="user">Usuario Estándar (Acceso normal)</ion-select-option>
-                  <ion-select-option value="admin">Administrador (Acceso total y métricas)</ion-select-option>
-                </ion-select>
-              </ion-item>
-            </div>
-
             <!-- Contraseña -->
             <div class="form-group" [class.has-error]="isFieldInvalid('password')">
               <ion-item lines="none" class="custom-input-item">

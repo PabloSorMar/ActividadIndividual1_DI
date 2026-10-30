@@ -1,0 +1,131 @@
+<ion-content class="about-content ion-padding">
+  <div class="about-container">
+    <!-- Hero Section -->
+    <section class="about-hero">
+      <div class="hero-badge">
+        <ion-icon name="business-outline"></ion-icon>
+        <span>Empresa & Tecnolog&iacute;a</span>
+      </div>
+      <h1 class="hero-title">Sobre <span class="brand-gradient">ClieGestion</span></h1>
+      <p class="hero-subtitle">
+        Plataforma empresarial de &uacute;ltima generaci&oacute;n dise&ntilde;ada para optimizar la gesti&oacute;n de clientes,
+        inventarios en tiempo real y resoluci&oacute;n &aacute;gil de tickets con los m&aacute;s altos est&aacute;ndares de accesibilidad y seguridad.
+      </p>
+    </section>
+
+    <!-- Métricas de Impacto -->
+    <section class="metrics-section">
+      <ion-grid class="ion-no-padding">
+        <ion-row>
+          <ion-col size="12" size-sm="6" size-lg="3" *ngFor="let metric of impactMetrics">
+            <div class="metric-card">
+              <div class="metric-icon-wrap" [ngClass]="metric.color">
+                <ion-icon [name]="metric.icon"></ion-icon>
+              </div>
+              <div class="metric-data">
+                <span class="metric-value">{{ metric.value }}</span>
+                <span class="metric-label">{{ metric.label }}</span>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </section>
+
+    <!-- Misión y Visión -->
+    <section class="mission-vision-section">
+      <ion-grid class="ion-no-padding">
+        <ion-row>
+          <ion-col size="12" size-md="6">
+            <div class="info-card mission-card">
+              <div class="card-top-icon">
+                <ion-icon name="rocket-outline"></ion-icon>
+              </div>
+              <h2 class="card-title">Nuestra Misi&oacute;n</h2>
+              <p class="card-description">
+                Proveer a peque&ntilde;as, medianas y grandes corporaciones una suite integral, r&aacute;pida y segura
+                que automatice el control de inventario, agilice la atenci&oacute;n a clientes y garantice
+                la continuidad operativa sin fricciones.
+              </p>
+              <div class="card-highlight-list">
+                <div class="highlight-item">
+                  <ion-icon name="checkmark-circle"></ion-icon>
+                  <span>Gesti&oacute;n unificada de cat&aacute;logo e incidencias</span>
+                </div>
+                <div class="highlight-item">
+                  <ion-icon name="checkmark-circle"></ion-icon>
+                  <span>Arquitectura en la nube con disponibilidad 24/7</span>
+                </div>
+              </div>
+            </div>
+          </ion-col>
+
+          <ion-col size="12" size-md="6">
+            <div class="info-card vision-card">
+              <div class="card-top-icon vision">
+                <ion-icon name="eye-outline"></ion-icon>
+              </div>
+              <h2 class="card-title">Nuestra Visi&oacute;n</h2>
+              <p class="card-description">
+                Consolidar a ClieGestion como la plataforma de referencia en experiencia de usuario y accesibilidad (WCAG 2.1),
+                ofreciendo herramientas de inteligencia anal&iacute;tica, reportes en tiempo real y persistencia reactiva.
+              </p>
+              <div class="card-highlight-list">
+                <div class="highlight-item">
+                  <ion-icon name="checkmark-circle"></ion-icon>
+                  <span>Interfaz moderna y fluida con soporte para temas</span>
+                </div>
+                <div class="highlight-item">
+                  <ion-icon name="checkmark-circle"></ion-icon>
+                  <span>M&aacute;xima protecci&oacute;n de datos y trazabilidad</span>
+                </div>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </section>
+
+    <!-- Pilares Tecnológicos -->
+    <section class="pillars-section">
+      <div class="section-header">
+        <h2 class="section-title">Pilares Tecnol&oacute;gicos</h2>
+        <p class="section-subtitle">
+          Construido sobre fundamentos modernos para ofrecer m&aacute;ximo rendimiento y escalabilidad.
+        </p>
+      </div>
+
+      <ion-grid class="ion-no-padding">
+        <ion-row>
+          <ion-col size="12" size-md="6" *ngFor="let pillar of pillars">
+            <div class="pillar-card">
+              <div class="pillar-header">
+                <div class="pillar-icon">
+                  <ion-icon [name]="pillar.icon"></ion-icon>
+                </div>
+                <ion-badge color="primary">{{ pillar.badge }}</ion-badge>
+              </div>
+              <h3 class="pillar-title">{{ pillar.title }}</h3>
+              <p class="pillar-desc">{{ pillar.desc }}</p>
+            </div>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </section>
+
+    <!-- CTA Contacto -->
+    <section class="cta-banner">
+      <div class="cta-content">
+        <div class="cta-text">
+          <h2>&iquest;Tienes alguna duda o propuesta de integraci&oacute;n?</h2>
+          <p>Nuestro equipo t&eacute;cnico y de soporte est&aacute; listo para ayudarte en cada etapa del camino.</p>
+        </div>
+        <ion-button routerLink="/contact" size="large" fill="solid" class="cta-button">
+          <ion-icon slot="start" name="mail-outline"></ion-icon>
+          Contactar con Soporte
+        </ion-button>
+      </div>
+    </section>
+  </div>
+</ion-content>
+

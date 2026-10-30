@@ -56,3 +56,63 @@ body {
 .font-mono {
   font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
 }
+
+/* ==================== MEJORAS ESTÉTICAS Y CONTRASTE GLOBAL ==================== */
+
+/* Tarjetas con sombras sutiles y bordes pulidos */
+ion-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(var(--ion-color-dark-rgb, 15, 23, 42), 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+  }
+}
+
+/* Botones con transiciones suaves y microinteracciones */
+ion-button {
+  --border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: transform 0.15s ease, filter 0.15s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Badges con tipografía nítida y contraste reforzado */
+ion-badge {
+  border-radius: 8px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 4px 10px;
+}
+
+/* Modo Oscuro: Elevaciones profundas y contraste optimizado */
+body.ion-palette-dark {
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  ion-card {
+    background: #131b2e;
+    border-color: rgba(255, 255, 255, 0.08);
+
+    &:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+  }
+
+  ion-item {
+    --background: #131b2e;
+    --color: #f1f5f9;
+  }
+}

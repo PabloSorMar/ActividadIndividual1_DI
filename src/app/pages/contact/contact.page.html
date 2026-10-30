@@ -1,0 +1,231 @@
+<ion-content class="contact-content ion-padding">
+  <div class="contact-container">
+    <!-- Hero Header -->
+    <section class="contact-hero">
+      <div class="hero-badge">
+        <ion-icon name="chatbubbles-outline"></ion-icon>
+        <span>Centro de Asistencia</span>
+      </div>
+      <h1 class="hero-title">Contacto &amp; Soporte <span class="brand-gradient">ClieGestion</span></h1>
+      <p class="hero-subtitle">
+        &iquest;Necesitas asistencia con tu cuenta, integraciones de Supabase o reportar una consulta?
+        Nuestro equipo de atenci&oacute;n est&aacute; disponible para resolver tus necesidades.
+      </p>
+    </section>
+
+    <!-- Canales de Contacto Rápidos -->
+    <section class="channels-section">
+      <ion-grid class="ion-no-padding">
+        <ion-row>
+          <ion-col size="12" size-sm="6" size-lg="3" *ngFor="let channel of contactChannels">
+            <div class="channel-card">
+              <div class="channel-icon-wrap" [ngClass]="channel.color">
+                <ion-icon [name]="channel.icon"></ion-icon>
+              </div>
+              <div class="channel-info">
+                <h3 class="channel-title">{{ channel.title }}</h3>
+                <p class="channel-detail">{{ channel.detail }}</p>
+                <span class="channel-sub">{{ channel.sub }}</span>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </section>
+
+    <!-- Grid Principal: Formulario de Contacto + FAQ -->
+    <section class="main-contact-grid">
+      <ion-grid class="ion-no-padding">
+        <ion-row>
+          <!-- Columna Izquierda: Formulario Reactivo de Contacto -->
+          <ion-col size="12" size-lg="7">
+            <div class="form-wrapper-card">
+              <div class="form-card-header">
+                <div class="header-icon">
+                  <ion-icon name="mail-unread-outline"></ion-icon>
+                </div>
+                <div>
+                  <h2 class="form-title">Env&iacute;anos un Mensaje Directo</h2>
+                  <p class="form-subtitle">Completa el formulario y te responderemos en un plazo m&aacute;ximo de 2 horas laborales.</p>
+                </div>
+              </div>
+
+              <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="contact-form">
+                <ion-grid class="ion-no-padding">
+                  <ion-row>
+                    <ion-col size="12" size-md="6">
+                      <div class="form-group">
+                        <label for="contact-name" class="input-label">Nombre Completo *</label>
+                        <div class="input-field-wrap">
+                          <ion-icon name="person-outline" class="input-icon"></ion-icon>
+                          <input
+                            id="contact-name"
+                            type="text"
+                            formControlName="name"
+                            placeholder="Tu nombre y apellidos"
+                            class="custom-input"
+                          />
+                        </div>
+                        <span
+                          class="field-error"
+                          *ngIf="contactForm.get('name')?.touched && contactForm.get('name')?.invalid"
+                        >
+                          Introduce un nombre v&aacute;lido (m&iacute;nimo 2 caracteres).
+                        </span>
+                      </div>
+                    </ion-col>
+
+                    <ion-col size="12" size-md="6">
+                      <div class="form-group">
+                        <label for="contact-email" class="input-label">Correo Electr&oacute;nico *</label>
+                        <div class="input-field-wrap">
+                          <ion-icon name="mail-outline" class="input-icon"></ion-icon>
+                          <input
+                            id="contact-email"
+                            type="email"
+                            formControlName="email"
+                            placeholder="correo@ejemplo.com"
+                            class="custom-input"
+                          />
+                        </div>
+                        <span
+                          class="field-error"
+                          *ngIf="contactForm.get('email')?.touched && contactForm.get('email')?.invalid"
+                        >
+                          Introduce un correo electr&oacute;nico v&aacute;lido.
+                        </span>
+                      </div>
+                    </ion-col>
+
+                    <ion-col size="12" size-md="6">
+                      <div class="form-group">
+                        <label for="contact-category" class="input-label">Categor&iacute;a de Consulta *</label>
+                        <div class="input-field-wrap select-wrap">
+                          <ion-icon name="folder-open-outline" class="input-icon"></ion-icon>
+                          <select id="contact-category" formControlName="category" class="custom-select">
+                            <option value="soporte">Soporte T&eacute;cnico y Plataforma</option>
+                            <option value="ventas">Informaci&oacute;n Comercial y Planes</option>
+                            <option value="facturacion">Facturaci&oacute;n y Cuentas</option>
+                            <option value="consulta">Consulta General</option>
+                          </select>
+                        </div>
+                      </div>
+                    </ion-col>
+
+                    <ion-col size="12" size-md="6">
+                      <div class="form-group">
+                        <label for="contact-subject" class="input-label">Asunto *</label>
+                        <div class="input-field-wrap">
+                          <ion-icon name="bookmark-outline" class="input-icon"></ion-icon>
+                          <input
+                            id="contact-subject"
+                            type="text"
+                            formControlName="subject"
+                            placeholder="Resumen de la consulta"
+                            class="custom-input"
+                          />
+                        </div>
+                        <span
+                          class="field-error"
+                          *ngIf="contactForm.get('subject')?.touched && contactForm.get('subject')?.invalid"
+                        >
+                          El asunto debe tener al menos 4 caracteres.
+                        </span>
+                      </div>
+                    </ion-col>
+
+                    <ion-col size="12">
+                      <div class="form-group">
+                        <label for="contact-message" class="input-label">Mensaje o Detalle de la Solicitud *</label>
+                        <div class="input-field-wrap textarea-wrap">
+                          <textarea
+                            id="contact-message"
+                            formControlName="message"
+                            rows="5"
+                            placeholder="Describe detalladamente tu consulta, duda o incidencia..."
+                            class="custom-textarea"
+                          ></textarea>
+                        </div>
+                        <span
+                          class="field-error"
+                          *ngIf="contactForm.get('message')?.touched && contactForm.get('message')?.invalid"
+                        >
+                          El mensaje debe contener al menos 10 caracteres explicativos.
+                        </span>
+                      </div>
+                    </ion-col>
+                  </ion-row>
+                </ion-grid>
+
+                <div class="form-submit-row">
+                  <ion-button
+                    type="submit"
+                    [disabled]="isSubmitting"
+                    size="default"
+                    color="primary"
+                    class="send-btn"
+                  >
+                    <ion-spinner *ngIf="isSubmitting" name="crescent" slot="start"></ion-spinner>
+                    <ion-icon *ngIf="!isSubmitting" name="send-outline" slot="start"></ion-icon>
+                    {{ isSubmitting ? 'Transmitiendo solicitud...' : 'Enviar Solicitud de Asistencia' }}
+                  </ion-button>
+                </div>
+              </form>
+            </div>
+          </ion-col>
+
+          <!-- Columna Derecha: Preguntas Frecuentes (FAQ) -->
+          <ion-col size="12" size-lg="5">
+            <div class="faq-wrapper-card">
+              <div class="faq-card-header">
+                <div class="header-icon faq">
+                  <ion-icon name="help-buoy-outline"></ion-icon>
+                </div>
+                <div>
+                  <h2 class="faq-title">Preguntas Frecuentes</h2>
+                  <p class="faq-subtitle">Respuestas r&aacute;pidas a las consultas m&aacute;s habituales.</p>
+                </div>
+              </div>
+
+              <div class="faq-accordion-list">
+                <div
+                  *ngFor="let item of faqs; let i = index"
+                  class="faq-accordion-item"
+                  [class.open]="item.isOpen"
+                >
+                  <button
+                    type="button"
+                    class="faq-trigger"
+                    (click)="toggleFaq(i)"
+                    [attr.aria-expanded]="item.isOpen"
+                  >
+                    <span class="faq-q-text">{{ item.question }}</span>
+                    <ion-icon
+                      class="faq-arrow"
+                      [name]="item.isOpen ? 'chevron-up-outline' : 'chevron-down-outline'"
+                    ></ion-icon>
+                  </button>
+                  <div class="faq-answer-body" *ngIf="item.isOpen">
+                    <p>{{ item.answer }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tarjeta de Horario / Disponibilidad -->
+              <div class="hours-info-box">
+                <div class="hours-icon">
+                  <ion-icon name="time-outline"></ion-icon>
+                </div>
+                <div class="hours-text">
+                  <strong>Horario de Operaciones:</strong>
+                  <span>L-V: 08:00h - 19:00h CEST | Soporte de Emergencias: Continuo</span>
+                </div>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </section>
+  </div>
+</ion-content>
+

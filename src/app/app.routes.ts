@@ -44,6 +44,18 @@ export const routes: Routes = [
     title: 'Portal de Usuario | ClieGestion'
   },
   {
+    path: 'about',
+    loadComponent: () => import('./pages/about/about.page').then(m => m.AboutPage),
+    canActivate: [authGuard],
+    title: 'Sobre Nosotros | ClieGestion'
+  },
+  {
+    path: 'contact',
+    loadComponent: () => import('./pages/contact/contact.page').then(m => m.ContactPage),
+    canActivate: [authGuard],
+    title: 'Contacto & Soporte | ClieGestion'
+  },
+  {
     path: 'unauthorized',
     loadComponent: () => import('./pages/unauthorized/unauthorized.page').then(m => m.UnauthorizedPage),
     title: 'Acceso Restringido | ClieGestion'

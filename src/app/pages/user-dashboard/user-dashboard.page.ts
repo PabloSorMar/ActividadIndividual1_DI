@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy, NgZone, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
@@ -73,8 +73,9 @@ export class UserDashboardPage implements OnInit, OnDestroy, ViewWillEnter {
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
 
+  // Inicialización instantánea con caché local para evitar esperas y spinners congelados
+  public products: Product[] = this.supabaseService.getCachedProducts();
   public isLoadingProducts: boolean = false;
-  public products: Product[] = [];
   public productSearchQuery: string = '';
 
   public myTickets: Ticket[] = [];
@@ -109,51 +110,51 @@ export class UserDashboardPage implements OnInit, OnDestroy, ViewWillEnter {
   }
 
   ionViewWillEnter(): void {
-    // Garantiza recarga y renderizado inmediato cada vez que el usuario navega a la vista
+    // Al entrar o reingresar a la vista en Ionic
     this.loadProducts();
     this.subscribeToMyTickets();
   }
 
   public async loadProducts(): Promise<void> {
-    // Si ya hay productos cargados en memoria, evitamos el parpadeo de pantalla vacía
     if (this.products.length === 0) {
       this.isLoadingProducts = true;
       this.cdr.detectChanges();
     }
 
-    // Temporizador de seguridad para evitar que la vista quede en carga indefinida ante latencias de red
-    const safetyTimer = setTimeout(() => {
-      if (this.isLoadingProducts) {
-        this.ngZone.run(() => {
-          this.isLoadingProducts = false;
-          this.cdr.detectChanges();
-        });
-      }
-    }, 3500);
-
     try {
-      const prods = await this.supabaseService.getProducts();
+      const data = await this.supabaseService.getProducts();
       this.ngZone.run(() => {
-        clearTimeout(safetyTimer);
-        this.products = prods;
+        this.products = data;
         this.isLoadingProducts = false;
         this.cdr.detectChanges();
       });
     } catch (e: any) {
       console.warn('Error cargando productos:', e);
       this.ngZone.run(() => {
-        clearTimeout(safetyTimer);
         this.isLoadingProducts = false;
         this.cdr.detectChanges();
       });
-      this.notification.showToast('Error al conectar con catálogo de productos', 'danger');
     } finally {
       this.ngZone.run(() => {
-        clearTimeout(safetyTimer);
         this.isLoadingProducts = false;
         this.cdr.detectChanges();
       });
     }
+  }
+
+  private subscribeToMyTickets(): void {
+    if (this.ticketsSub) {
+      this.ticketsSub.unsubscribe();
+    }
+    const currentUser = this.authService.getCurrentUser();
+    const userEmail = currentUser?.email || 'user@gmail.com';
+
+    this.ticketsSub = this.ticketService.getUserTickets(userEmail).subscribe(list => {
+      this.ngZone.run(() => {
+        this.myTickets = list;
+        this.cdr.detectChanges();
+      });
+    });
   }
 
   private setupRealtimeProducts(): void {
@@ -161,7 +162,7 @@ export class UserDashboardPage implements OnInit, OnDestroy, ViewWillEnter {
       const sb = this.supabaseService.client;
       if (sb) {
         this.supabaseChannel = sb
-          .channel('public:products:user-dashboard')
+          .channel('public:products:user-dashboard-realtime')
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'products' },
@@ -172,24 +173,8 @@ export class UserDashboardPage implements OnInit, OnDestroy, ViewWillEnter {
           .subscribe();
       }
     } catch (err) {
-      console.warn('Error conectando realtime products en user dashboard:', err);
+      console.warn('Realtime channel no inicializado en user-dashboard:', err);
     }
-  }
-
-  private subscribeToMyTickets(): void {
-    if (this.ticketsSub) {
-      this.ticketsSub.unsubscribe();
-    }
-
-    const currentUser = this.authService.getCurrentUser();
-    const userEmail = currentUser?.email || 'user@gmail.com';
-
-    this.ticketsSub = this.ticketService.getUserTickets(userEmail).subscribe(list => {
-      this.ngZone.run(() => {
-        this.myTickets = list;
-        this.cdr.detectChanges();
-      });
-    });
   }
 
   public submitTicket(): void {

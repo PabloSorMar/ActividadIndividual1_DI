@@ -273,6 +273,22 @@ export class SupabaseService {
   // =================== CRUD PRODUCTOS (SUPABASE) ===================
 
   /**
+   * Obtiene la lista de productos almacenados en caché síncrona para renderizado inmediato
+   */
+  public getCachedProducts(): Product[] {
+    try {
+      const cached = localStorage.getItem(STORAGE_PRODUCTS_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return [];
+  }
+
+  /**
    * Obtiene la lista de productos de Supabase (o caché local si no responde)
    */
   public async getProducts(): Promise<Product[]> {
@@ -296,7 +312,7 @@ export class SupabaseService {
 
         if (!error && data) {
           // Mapeo según el esquema real de Supabase (nombre, descripcion, precio, stock)
-          return data.map((item: any) => ({
+          const mapped: Product[] = data.map((item: any) => ({
             id: item.id,
             name: item.nombre || item.name || 'Producto sin nombre',
             price: Number(item.precio ?? item.price ?? 0),
@@ -305,13 +321,17 @@ export class SupabaseService {
             description: item.descripcion || item.description || '',
             created_at: item.created_at || new Date().toISOString()
           }));
+          try {
+            localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(mapped));
+          } catch {}
+          return mapped;
         }
       } catch (e) {
         console.warn('Error al leer productos de Supabase:', e);
       }
     }
 
-    return [];
+    return this.getCachedProducts();
   }
 
   /**

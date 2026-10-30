@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
@@ -50,6 +50,7 @@ export class LoginPage implements ViewWillEnter {
   public supabaseService = inject(SupabaseService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private ngZone = inject(NgZone);
 
   public loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.minLength(3)]],
@@ -110,29 +111,33 @@ export class LoginPage implements ViewWillEnter {
 
     this.authService.login({ email, password, rememberMe }).subscribe({
       next: (res) => {
-        this.isSubmitting = false;
-        if (res.success && res.user) {
-          this.notificationService.showToast(
-            `¡Bienvenido de nuevo, ${res.user.name}!`,
-            'success'
-          );
+        this.ngZone.run(() => {
+          this.isSubmitting = false;
+          if (res.success && res.user) {
+            this.notificationService.showToast(
+              `¡Bienvenido de nuevo, ${res.user.name}!`,
+              'success'
+            );
 
-          // Redirección según rol o returnUrl previa
-          const returnUrl = this.route.snapshot.queryParams['returnUrl'];
-          if (returnUrl) {
-            this.router.navigateByUrl(returnUrl);
-          } else if (res.user.role === 'admin') {
-            this.router.navigate(['/admin-dashboard']);
+            // Redirección según rol o returnUrl previa dentro de NgZone
+            const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+            if (returnUrl) {
+              this.router.navigateByUrl(returnUrl);
+            } else if (res.user.role === 'admin') {
+              this.router.navigate(['/admin-dashboard']);
+            } else {
+              this.router.navigate(['/user-dashboard']);
+            }
           } else {
-            this.router.navigate(['/user-dashboard']);
+            this.errorMessage = res.message;
           }
-        } else {
-          this.errorMessage = res.message;
-        }
+        });
       },
       error: () => {
-        this.isSubmitting = false;
-        this.errorMessage = 'Error de conexión con el servicio de autenticación.';
+        this.ngZone.run(() => {
+          this.isSubmitting = false;
+          this.errorMessage = 'Error de conexión con el servicio de autenticación.';
+        });
       }
     });
   }

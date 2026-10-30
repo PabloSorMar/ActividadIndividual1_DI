@@ -554,6 +554,84 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   padding: 1.25rem;
 
+  .admin-tickets-filter-card {
+    background: rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.03);
+    border: 1px solid rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.08);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 1rem;
+
+    .filter-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+
+      .filter-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        ion-icon {
+          font-size: 1.2rem;
+        }
+
+        .filter-title {
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: var(--ion-text-color, #0f172a);
+        }
+
+        .filter-count-badge {
+          font-size: 0.72rem;
+          font-weight: 600;
+        }
+      }
+
+      .reset-btn {
+        font-size: 0.78rem;
+        font-weight: 600;
+        margin: 0;
+      }
+    }
+
+    .filter-selectors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.85rem;
+
+      .filter-control-box {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--ion-card-background, #ffffff);
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        border: 1px solid rgba(var(--ion-color-dark-rgb, 44, 62, 80), 0.1);
+
+        ion-label {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--ion-color-step-600, #64748b);
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+          white-space: nowrap;
+        }
+
+        .admin-filter-select {
+          --padding-start: 4px;
+          --padding-end: 4px;
+          --padding-top: 4px;
+          --padding-bottom: 4px;
+          font-size: 0.86rem;
+          font-weight: 600;
+          min-height: 32px;
+          width: 100%;
+        }
+      }
+    }
+  }
+
   .section-toolbar {
     display: flex;
     justify-content: space-between;

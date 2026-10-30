@@ -26,7 +26,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { SupabaseService } from '../../core/services/supabase.service';
 import { TicketService } from '../../core/services/ticket.service';
 import { Product } from '../../core/models/product.model';
-import { Ticket, TicketPriority } from '../../core/models/ticket.model';
+import { Ticket, TicketPriority, TicketStatus } from '../../core/models/ticket.model';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { HelpModalComponent } from '../../shared/components/help-modal/help-modal.component';
 
@@ -80,6 +80,31 @@ export class UserDashboardPage implements OnInit, OnDestroy, ViewWillEnter {
 
   public myTickets: Ticket[] = [];
   public isSubmittingTicket: boolean = false;
+
+  // Filtros de Tickets para el Usuario (Estado y Prioridad)
+  public ticketStatusFilter: 'todos' | TicketStatus = 'todos';
+  public ticketPriorityFilter: 'todas' | TicketPriority = 'todas';
+
+  public get filteredMyTickets(): Ticket[] {
+    return this.myTickets.filter(t => {
+      if (this.ticketStatusFilter !== 'todos' && t.status !== this.ticketStatusFilter) {
+        return false;
+      }
+      if (this.ticketPriorityFilter !== 'todas' && t.priority !== this.ticketPriorityFilter) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  public resetTicketFilters(): void {
+    this.ticketStatusFilter = 'todos';
+    this.ticketPriorityFilter = 'todas';
+  }
+
+  public get hasActiveTicketFilters(): boolean {
+    return this.ticketStatusFilter !== 'todos' || this.ticketPriorityFilter !== 'todas';
+  }
 
   // Gestión de Foto de Perfil (Supabase Storage: bucket 'perfiles')
   @ViewChild('avatarFileInput') public avatarFileInput?: ElementRef<HTMLInputElement>;

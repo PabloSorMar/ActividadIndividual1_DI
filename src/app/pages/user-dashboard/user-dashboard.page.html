@@ -254,17 +254,71 @@
                 <p>Historial y estado de tus incidencias enviadas.</p>
               </div>
             </div>
-            <ion-badge color="secondary">{{ myTickets.length }} tickets</ion-badge>
+            <ion-badge color="secondary">{{ filteredMyTickets.length }} / {{ myTickets.length }} tickets</ion-badge>
           </div>
 
+          <!-- Barra de Filtros de Tickets (Estado y Prioridad) -->
+          <div class="user-tickets-filters">
+            <div class="filter-controls-row">
+              <!-- Filtro de Estado -->
+              <div class="filter-pill-item">
+                <ion-label>Estado:</ion-label>
+                <ion-select [(ngModel)]="ticketStatusFilter" interface="popover" class="compact-select">
+                  <ion-select-option value="todos">Todos los Estados</ion-select-option>
+                  <ion-select-option value="abierto">🔴 Abierto</ion-select-option>
+                  <ion-select-option value="en_proceso">🟡 En Proceso</ion-select-option>
+                  <ion-select-option value="resuelto">🟢 Resuelto</ion-select-option>
+                </ion-select>
+              </div>
+
+              <!-- Filtro de Prioridad -->
+              <div class="filter-pill-item">
+                <ion-label>Prioridad:</ion-label>
+                <ion-select [(ngModel)]="ticketPriorityFilter" interface="popover" class="compact-select">
+                  <ion-select-option value="todas">Todas las Prioridades</ion-select-option>
+                  <ion-select-option value="urgente">🔴 Urgente</ion-select-option>
+                  <ion-select-option value="alta">🟠 Alta</ion-select-option>
+                  <ion-select-option value="media">🔵 Media</ion-select-option>
+                  <ion-select-option value="baja">🟢 Baja</ion-select-option>
+                </ion-select>
+              </div>
+
+              <!-- Botón Limpiar Filtros -->
+              <ion-button
+                *ngIf="hasActiveTicketFilters"
+                fill="clear"
+                color="danger"
+                size="small"
+                (click)="resetTicketFilters()"
+                class="filter-reset-btn"
+                title="Restablecer filtros"
+              >
+                <ion-icon slot="start" name="close-circle-outline"></ion-icon>
+                Limpiar
+              </ion-button>
+            </div>
+          </div>
+
+          <!-- Estado 1: No hay ningún ticket creado -->
           <div *ngIf="myTickets.length === 0" class="no-tickets-state">
             <ion-icon name="ticket-outline"></ion-icon>
             <h4>Aún no has creado ningún ticket</h4>
             <p>Utiliza el formulario contiguo para enviar tu primera consulta o incidencia.</p>
           </div>
 
-          <div *ngIf="myTickets.length > 0" class="tickets-list">
-            <div *ngFor="let t of myTickets" class="ticket-item-row" [class]="'priority-' + t.priority">
+          <!-- Estado 2: Hay tickets pero ninguno coincide con los filtros aplicados -->
+          <div *ngIf="myTickets.length > 0 && filteredMyTickets.length === 0" class="no-tickets-state filter-empty-state">
+            <ion-icon name="funnel-outline"></ion-icon>
+            <h4>No hay tickets con estos filtros</h4>
+            <p>No se encontraron tickets con los criterios seleccionados.</p>
+            <ion-button size="small" fill="outline" color="primary" (click)="resetTicketFilters()">
+              Restablecer Filtros
+            </ion-button>
+          </div>
+
+          <!-- Estado 3: Lista de tickets filtrados -->
+          <div *ngIf="filteredMyTickets.length > 0" class="tickets-list">
+            <div *ngFor="let t of filteredMyTickets" class="ticket-item-row" [class]="'priority-' + t.priority">
               <div class="ticket-header-line">
                 <span class="ticket-id">{{ t.id }}</span>
                 <div class="badges-row">

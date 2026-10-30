@@ -123,6 +123,31 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, Vie
   public tickets: Ticket[] = [];
   public liveLogs: AuditLog[] = [];
 
+  // Filtros de Tickets para el Administrador (Estado y Prioridad)
+  public adminTicketStatusFilter: 'todos' | TicketStatus = 'todos';
+  public adminTicketPriorityFilter: 'todas' | TicketPriority = 'todas';
+
+  public get filteredTickets(): Ticket[] {
+    return this.tickets.filter(t => {
+      if (this.adminTicketStatusFilter !== 'todos' && t.status !== this.adminTicketStatusFilter) {
+        return false;
+      }
+      if (this.adminTicketPriorityFilter !== 'todas' && t.priority !== this.adminTicketPriorityFilter) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  public resetAdminTicketFilters(): void {
+    this.adminTicketStatusFilter = 'todos';
+    this.adminTicketPriorityFilter = 'todas';
+  }
+
+  public get hasActiveAdminTicketFilters(): boolean {
+    return this.adminTicketStatusFilter !== 'todos' || this.adminTicketPriorityFilter !== 'todas';
+  }
+
   // Instancias de Chart.js
   private productStockChart: Chart | null = null;
   private ticketPriorityChart: Chart | null = null;
@@ -937,13 +962,14 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, Vie
   // =================== EXPORTACIÓN ===================
 
   public exportTicketsCsv(): void {
-    if (this.tickets.length === 0) {
-      this.notificationService.showToast('No hay tickets para exportar a CSV', 'warning');
+    const list = this.filteredTickets;
+    if (list.length === 0) {
+      this.notificationService.showToast('No hay tickets para exportar a CSV con los filtros seleccionados', 'warning');
       return;
     }
     this.exportService.exportToCsv(
       `Tickets_Soporte_${new Date().toISOString().split('T')[0]}`,
-      this.tickets,
+      list,
       [
         { key: 'id', header: 'ID Ticket' },
         { key: 'reason', header: 'Razon / Motivo' },
@@ -958,8 +984,9 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, Vie
   }
 
   public exportTicketsPdf(): void {
-    if (this.tickets.length === 0) {
-      this.notificationService.showToast('No hay tickets para exportar a PDF', 'warning');
+    const list = this.filteredTickets;
+    if (list.length === 0) {
+      this.notificationService.showToast('No hay tickets para exportar a PDF con los filtros seleccionados', 'warning');
       return;
     }
     this.exportService.exportToPdf({
@@ -967,10 +994,10 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, Vie
       subtitle: `Registro oficial de solicitudes y estado técnico (${new Date().toLocaleDateString('es-ES')})`,
       filename: `Tickets_Soporte_${new Date().toISOString().split('T')[0]}`,
       kpis: [
+        { label: 'Tickets Filtrados', value: String(list.length) },
         { label: 'Total Tickets', value: String(this.tickets.length) },
         { label: 'Pendientes', value: String(this.openTicketCount) },
-        { label: 'Urgentes', value: String(this.urgentTicketCount) },
-        { label: 'Resueltos', value: String(this.resolvedTicketCount) }
+        { label: 'Urgentes', value: String(this.urgentTicketCount) }
       ],
       columns: [
         { header: 'ID', key: 'id' },
@@ -979,7 +1006,7 @@ export class AdminDashboardPage implements OnInit, AfterViewInit, OnDestroy, Vie
         { header: 'Solicitante', key: 'userName' },
         { header: 'Estado', key: 'status' }
       ],
-      rows: this.tickets
+      rows: list
     });
     this.notificationService.showToast('Informe PDF de tickets generado y descargado', 'success');
   }

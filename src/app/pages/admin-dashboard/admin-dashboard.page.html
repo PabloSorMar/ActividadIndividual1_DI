@@ -132,14 +132,63 @@
 
     <!-- Fila Tabla de Tickets creados por usuarios con Razón y Prioridad -->
     <div class="tickets-section ion-margin-top">
-      <div class="table-container">
+      <!-- Barra de Filtros de Tickets para Administrador (Prioridad y Estado) -->
+      <div class="admin-tickets-filter-card">
+        <div class="filter-header-row">
+          <div class="filter-title-group">
+            <ion-icon name="funnel-outline" color="primary"></ion-icon>
+            <span class="filter-title">Filtrar Incidencias</span>
+            <ion-badge color="secondary" class="filter-count-badge">
+              {{ filteredTickets.length }} de {{ tickets.length }} tickets
+            </ion-badge>
+          </div>
+          <ion-button
+            *ngIf="hasActiveAdminTicketFilters"
+            fill="clear"
+            color="danger"
+            size="small"
+            (click)="resetAdminTicketFilters()"
+            class="reset-btn"
+          >
+            <ion-icon slot="start" name="close-circle-outline"></ion-icon>
+            Restablecer Filtros
+          </ion-button>
+        </div>
+
+        <div class="filter-selectors-grid">
+          <!-- Filtro por Estado -->
+          <div class="filter-control-box">
+            <ion-label>Filtrar por Estado:</ion-label>
+            <ion-select [(ngModel)]="adminTicketStatusFilter" interface="popover" class="admin-filter-select">
+              <ion-select-option value="todos">Todos los Estados</ion-select-option>
+              <ion-select-option value="abierto">🔴 Abierto (Pendiente)</ion-select-option>
+              <ion-select-option value="en_proceso">🟡 En Proceso (Asignado)</ion-select-option>
+              <ion-select-option value="resuelto">🟢 Resuelto (Completado)</ion-select-option>
+            </ion-select>
+          </div>
+
+          <!-- Filtro por Prioridad -->
+          <div class="filter-control-box">
+            <ion-label>Filtrar por Prioridad:</ion-label>
+            <ion-select [(ngModel)]="adminTicketPriorityFilter" interface="popover" class="admin-filter-select">
+              <ion-select-option value="todas">Todas las Prioridades</ion-select-option>
+              <ion-select-option value="urgente">🔴 Urgente</ion-select-option>
+              <ion-select-option value="alta">🟠 Alta</ion-select-option>
+              <ion-select-option value="media">🔵 Media</ion-select-option>
+              <ion-select-option value="baja">🟢 Baja</ion-select-option>
+            </ion-select>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container ion-margin-top">
         <app-data-table
           title="Registro de Incidencias y Tickets de Usuarios"
-          [data]="tickets"
+          [data]="filteredTickets"
           [columns]="ticketColumns"
           [actions]="ticketActions"
           [pageSize]="6"
-          emptyMessage="No hay tickets de usuarios registrados."
+          emptyMessage="No hay tickets que coincidan con los filtros seleccionados."
           searchPlaceholder="Buscar por motivo, usuario, prioridad..."
           (actionClick)="onTicketAction($event)"
         >

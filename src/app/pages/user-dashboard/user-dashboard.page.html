@@ -75,13 +75,13 @@
       </div>
 
       <!-- Estado de carga -->
-      <div *ngIf="isLoadingProducts" class="section-loading">
+      <div *ngIf="isLoadingProducts && products.length === 0" class="section-loading">
         <ion-spinner name="crescent" color="primary"></ion-spinner>
         <p>Cargando productos...</p>
       </div>
 
       <!-- Grid de Tarjetas de Productos -->
-      <div *ngIf="!isLoadingProducts" class="products-grid">
+      <div *ngIf="!isLoadingProducts || products.length > 0" class="products-grid">
         <div *ngIf="filteredProducts.length === 0" class="empty-products-box">
           <ion-icon name="search-outline"></ion-icon>
           <p>No se encontraron productos que coincidan con la búsqueda.</p>

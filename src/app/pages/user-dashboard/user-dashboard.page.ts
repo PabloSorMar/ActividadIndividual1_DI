@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
@@ -17,7 +17,8 @@ import {
   IonSelectOption,
   IonSpinner,
   IonSearchbar,
-  ModalController
+  ModalController,
+  ViewWillEnter
 } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
@@ -62,15 +63,17 @@ import { HelpModalComponent } from '../../shared/components/help-modal/help-moda
   templateUrl: './user-dashboard.page.html',
   styleUrls: ['./user-dashboard.page.scss']
 })
-export class UserDashboardPage implements OnInit, OnDestroy {
+export class UserDashboardPage implements OnInit, OnDestroy, ViewWillEnter {
   public authService = inject(AuthService);
   private notification = inject(NotificationService);
   public supabaseService = inject(SupabaseService);
   public ticketService = inject(TicketService);
   private modalCtrl = inject(ModalController);
   private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
 
-  public isLoadingProducts: boolean = true;
+  public isLoadingProducts: boolean = false;
   public products: Product[] = [];
   public productSearchQuery: string = '';
 
@@ -78,6 +81,7 @@ export class UserDashboardPage implements OnInit, OnDestroy {
   public isSubmittingTicket: boolean = false;
 
   private ticketsSub?: Subscription;
+  private supabaseChannel?: any;
 
   // Formulario para Crear Ticket (Requerimiento: Motivo y Prioridad)
   public ticketForm: FormGroup = this.fb.group({
@@ -101,26 +105,90 @@ export class UserDashboardPage implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadProducts();
     this.subscribeToMyTickets();
+    this.setupRealtimeProducts();
+  }
+
+  ionViewWillEnter(): void {
+    // Garantiza recarga y renderizado inmediato cada vez que el usuario navega a la vista
+    this.loadProducts();
+    this.subscribeToMyTickets();
   }
 
   public async loadProducts(): Promise<void> {
-    this.isLoadingProducts = true;
+    // Si ya hay productos cargados en memoria, evitamos el parpadeo de pantalla vacía
+    if (this.products.length === 0) {
+      this.isLoadingProducts = true;
+      this.cdr.detectChanges();
+    }
+
+    // Temporizador de seguridad para evitar que la vista quede en carga indefinida ante latencias de red
+    const safetyTimer = setTimeout(() => {
+      if (this.isLoadingProducts) {
+        this.ngZone.run(() => {
+          this.isLoadingProducts = false;
+          this.cdr.detectChanges();
+        });
+      }
+    }, 3500);
+
     try {
-      this.products = await this.supabaseService.getProducts();
+      const prods = await this.supabaseService.getProducts();
+      this.ngZone.run(() => {
+        clearTimeout(safetyTimer);
+        this.products = prods;
+        this.isLoadingProducts = false;
+        this.cdr.detectChanges();
+      });
     } catch (e: any) {
       console.warn('Error cargando productos:', e);
+      this.ngZone.run(() => {
+        clearTimeout(safetyTimer);
+        this.isLoadingProducts = false;
+        this.cdr.detectChanges();
+      });
       this.notification.showToast('Error al conectar con catálogo de productos', 'danger');
     } finally {
-      this.isLoadingProducts = false;
+      this.ngZone.run(() => {
+        clearTimeout(safetyTimer);
+        this.isLoadingProducts = false;
+        this.cdr.detectChanges();
+      });
+    }
+  }
+
+  private setupRealtimeProducts(): void {
+    try {
+      const sb = this.supabaseService.client;
+      if (sb) {
+        this.supabaseChannel = sb
+          .channel('public:products:user-dashboard')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'products' },
+            async () => {
+              await this.loadProducts();
+            }
+          )
+          .subscribe();
+      }
+    } catch (err) {
+      console.warn('Error conectando realtime products en user dashboard:', err);
     }
   }
 
   private subscribeToMyTickets(): void {
+    if (this.ticketsSub) {
+      this.ticketsSub.unsubscribe();
+    }
+
     const currentUser = this.authService.getCurrentUser();
     const userEmail = currentUser?.email || 'user@gmail.com';
 
     this.ticketsSub = this.ticketService.getUserTickets(userEmail).subscribe(list => {
-      this.myTickets = list;
+      this.ngZone.run(() => {
+        this.myTickets = list;
+        this.cdr.detectChanges();
+      });
     });
   }
 
@@ -136,11 +204,14 @@ export class UserDashboardPage implements OnInit, OnDestroy {
 
     this.ticketService.createTicket({ reason, priority, description }).subscribe({
       next: (newTicket) => {
-        this.isSubmittingTicket = false;
-        this.ticketForm.reset({
-          reason: '',
-          priority: 'media',
-          description: ''
+        this.ngZone.run(() => {
+          this.isSubmittingTicket = false;
+          this.ticketForm.reset({
+            reason: '',
+            priority: 'media',
+            description: ''
+          });
+          this.cdr.detectChanges();
         });
         this.notification.showToast(
           `¡Ticket ${newTicket.id} creado con éxito! Prioridad: ${priority.toUpperCase()}`,
@@ -148,7 +219,10 @@ export class UserDashboardPage implements OnInit, OnDestroy {
         );
       },
       error: () => {
-        this.isSubmittingTicket = false;
+        this.ngZone.run(() => {
+          this.isSubmittingTicket = false;
+          this.cdr.detectChanges();
+        });
         this.notification.showToast('No se pudo crear el ticket. Inténtalo de nuevo.', 'danger');
       }
     });
@@ -164,6 +238,11 @@ export class UserDashboardPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.ticketsSub) {
       this.ticketsSub.unsubscribe();
+    }
+    if (this.supabaseChannel) {
+      try {
+        this.supabaseService.client?.removeChannel(this.supabaseChannel);
+      } catch {}
     }
   }
 }

@@ -59,15 +59,17 @@ body {
 
 /* ==================== MEJORAS ESTÉTICAS Y CONTRASTE GLOBAL ==================== */
 
-/* Tarjetas con sombras sutiles y bordes pulidos */
+/* Tarjetas y Contenedores */
 ion-card {
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(var(--ion-color-dark-rgb, 15, 23, 42), 0.08);
+  box-shadow: var(--app-card-shadow);
+  border: 1px solid var(--app-card-border);
+  background: var(--app-card-bg);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 
   &:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+    box-shadow: var(--app-card-shadow-hover);
+    border-color: var(--app-card-border-hover);
   }
 }
 
@@ -76,7 +78,7 @@ ion-button {
   --border-radius: 10px;
   font-weight: 600;
   letter-spacing: 0.2px;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
 
   &:active {
     transform: scale(0.98);
@@ -91,6 +93,20 @@ ion-badge {
   padding: 4px 10px;
 }
 
+/* Inputs y Selects nativos e Ionic */
+ion-item {
+  --border-radius: 12px;
+  --background: var(--app-surface-subtle);
+  border: 1px solid var(--app-card-border);
+  border-radius: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &.item-has-focus {
+    border-color: var(--ion-color-primary, #2563eb);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+}
+
 /* Modo Oscuro: Elevaciones profundas y contraste optimizado */
 body.ion-palette-dark {
   ::-webkit-scrollbar-thumb {
@@ -102,17 +118,18 @@ body.ion-palette-dark {
   }
 
   ion-card {
-    background: #131b2e;
-    border-color: rgba(255, 255, 255, 0.08);
+    background: var(--app-card-bg);
+    border-color: var(--app-card-border);
 
     &:hover {
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-      border-color: rgba(255, 255, 255, 0.14);
+      box-shadow: var(--app-card-shadow-hover);
+      border-color: var(--app-card-border-hover);
     }
   }
 
   ion-item {
-    --background: #131b2e;
+    --background: var(--app-surface-subtle);
     --color: #f1f5f9;
+    border-color: var(--app-card-border);
   }
 }

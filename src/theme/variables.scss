@@ -62,6 +62,18 @@
   --ion-background-color: #f8fafc;
   --ion-card-background: #ffffff;
   --ion-text-color: #0f172a;
+
+  /* Design Tokens de Superficie (Modo Claro) */
+  --app-card-bg: #ffffff;
+  --app-card-border: rgba(15, 23, 42, 0.08);
+  --app-card-border-hover: rgba(37, 99, 235, 0.28);
+  --app-surface-subtle: rgba(15, 23, 42, 0.03);
+  --app-surface-hover: rgba(37, 99, 235, 0.04);
+  --app-card-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  --app-card-shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --app-header-border: rgba(15, 23, 42, 0.08);
+  --app-text-muted: #64748b;
+  --app-text-subtle: #94a3b8;
 }
 
 // Variables para Tema Oscuro
@@ -70,8 +82,8 @@ body.ion-palette-dark {
   --ion-background-color-rgb: 11, 15, 25;
   --ion-text-color: #f1f5f9;
   --ion-text-color-rgb: 241, 245, 249;
-  --ion-card-background: #151d30;
-  --ion-item-background: #151d30;
+  --ion-card-background: #131b2e;
+  --ion-item-background: #131b2e;
   --ion-color-step-50: #1a233a;
   --ion-color-step-100: #202b46;
   --ion-color-step-150: #263352;
@@ -83,4 +95,16 @@ body.ion-palette-dark {
   --ion-color-step-700: #e2e8f0;
   --ion-color-step-800: #f1f5f9;
   --ion-color-step-900: #f8fafc;
+
+  /* Design Tokens de Superficie (Modo Oscuro) */
+  --app-card-bg: #131b2e;
+  --app-card-border: rgba(255, 255, 255, 0.08);
+  --app-card-border-hover: rgba(59, 130, 246, 0.45);
+  --app-surface-subtle: rgba(255, 255, 255, 0.035);
+  --app-surface-hover: rgba(37, 99, 235, 0.12);
+  --app-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --app-card-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --app-header-border: rgba(255, 255, 255, 0.08);
+  --app-text-muted: #94a3b8;
+  --app-text-subtle: #64748b;
 }

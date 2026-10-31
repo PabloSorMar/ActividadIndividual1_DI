@@ -9,17 +9,21 @@
 
   <meta name="description" content="Sistema de gestión empresarial multiplataforma (PWA) desarrollado con Ionic y Angular para el módulo de Desarrollo de Interfaces (DAM)." />
   <meta name="color-scheme" content="dark light" />
-  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0" />
   <meta name="format-detection" content="telephone=no" />
   <meta name="msapplication-tap-highlight" content="no" />
   <meta name="theme-color" content="#0b0f19" />
 
   <link rel="icon" type="image/png" href="assets/icon/favicon.png" />
 
-  <!-- Tipografía moderna Google Fonts: Plus Jakarta Sans -->
+  <!-- Tipografía moderna Google Fonts: Plus Jakarta Sans (Carga Asíncrona No Bloqueante) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  </noscript>
 
   <!-- PWA meta tags -->
   <meta name="mobile-web-app-capable" content="yes" />

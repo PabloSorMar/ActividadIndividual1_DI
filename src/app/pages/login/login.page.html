@@ -45,8 +45,9 @@
               class="quick-login-btn admin-badge-btn"
               (click)="quickLogin('admin')"
               [disabled]="isSubmitting"
+              aria-label="Acceso rápido con rol Administrador"
             >
-              <ion-icon name="shield-checkmark-outline" slot="start"></ion-icon>
+              <ion-icon name="shield-checkmark-outline" slot="start" aria-hidden="true"></ion-icon>
               <div class="quick-btn-labels">
                 <span class="btn-main-label">Acceso Administrador</span>
                 <span class="btn-sub-label">admin@gmail.com • 123456</span>
@@ -59,8 +60,9 @@
               class="quick-login-btn user-badge-btn"
               (click)="quickLogin('user')"
               [disabled]="isSubmitting"
+              aria-label="Acceso rápido con rol Usuario Estándar"
             >
-              <ion-icon name="person-outline" slot="start"></ion-icon>
+              <ion-icon name="person-outline" slot="start" aria-hidden="true"></ion-icon>
               <div class="quick-btn-labels">
                 <span class="btn-main-label">Acceso Usuario Estándar</span>
                 <span class="btn-sub-label">user@gmail.com • 123456</span>
@@ -137,6 +139,7 @@
             color="primary"
             class="submit-button"
             [disabled]="isSubmitting"
+            aria-label="Acceder al Sistema"
           >
             <ion-spinner *ngIf="isSubmitting" name="crescent" slot="start"></ion-spinner>
             <span *ngIf="!isSubmitting">Acceder al Sistema</span>

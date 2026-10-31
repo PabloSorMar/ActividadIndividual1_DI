@@ -27,8 +27,8 @@ Para facilitar la evaluación docente, la pantalla de inicio de sesión incorpor
 
 | Rol | Correo Electrónico | Contraseña | Capacidades y Vistas Accesibles |
 | :--- | :--- | :--- | :--- |
-| **Administrador** | `admin@empresa.com` | `admin123` (o `1234`) | Acceso total: Cuadro de Mando con Chart.js, Gestión de Clientes y Facturas (CRUD SQL), Feed NoSQL en tiempo real, Exportación PDF/CSV. |
-| **Usuario Estándar** | `user@empresa.com` | `user123` (o `1234`) | Acceso restringido: Portal de Usuario, Consulta de Tareas, Envío de Solicitudes, Manual de Ayuda. Bloqueado en rutas de administración. |
+| **Administrador** | `admin@gmail.com` | `123456` | Acceso total: Cuadro de Mando con Chart.js, Gestión de Clientes y Productos (CRUD Supabase/SQL), Feed NoSQL en tiempo real, Exportación PDF/CSV. |
+| **Usuario Estándar** | `user@gmail.com` | `123456` | Acceso restringido: Portal de Usuario, Catálogo de Productos (Storage galeria), Registro de Tickets/Incidencias, Manual de Ayuda. Bloqueado en rutas de administración. |
 
 ---
 

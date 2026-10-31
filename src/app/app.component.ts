@@ -22,6 +22,22 @@ import {
   IonFooter,
   ModalController
 } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import {
+  businessOutline,
+  shieldCheckmark,
+  person,
+  personOutline,
+  statsChartOutline,
+  informationCircleOutline,
+  mailOutline,
+  helpBuoyOutline,
+  logOutOutline,
+  helpCircleOutline,
+  moon,
+  sunny,
+  powerOutline
+} from 'ionicons/icons';
 import { AuthService } from './core/services/auth.service';
 import { NotificationService } from './core/services/notification.service';
 import { HelpModalComponent } from './shared/components/help-modal/help-modal.component';
@@ -67,6 +83,24 @@ export class AppComponent implements OnInit {
   private modalCtrl = inject(ModalController);
 
   public isDarkMode: boolean = true;
+
+  constructor() {
+    addIcons({
+      businessOutline,
+      shieldCheckmark,
+      person,
+      personOutline,
+      statsChartOutline,
+      informationCircleOutline,
+      mailOutline,
+      helpBuoyOutline,
+      logOutOutline,
+      helpCircleOutline,
+      moon,
+      sunny,
+      powerOutline
+    });
+  }
 
   ngOnInit(): void {
     this.initTheme();

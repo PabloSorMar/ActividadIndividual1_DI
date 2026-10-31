@@ -14,6 +14,17 @@ import {
   IonCardContent,
   ViewWillEnter
 } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import {
+  businessOutline,
+  keyOutline,
+  flashOutline,
+  shieldCheckmarkOutline,
+  personOutline,
+  alertCircleOutline,
+  personCircleOutline,
+  lockClosedOutline
+} from 'ionicons/icons';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SupabaseService } from '../../core/services/supabase.service';
@@ -61,6 +72,20 @@ export class LoginPage implements ViewWillEnter {
   public isSubmitting: boolean = false;
   public errorMessage: string = '';
   public anonKeyInput: string = '';
+
+  constructor() {
+    // Registro explícito de iconos para evitar peticiones de red asíncronas HTTP
+    addIcons({
+      businessOutline,
+      keyOutline,
+      flashOutline,
+      shieldCheckmarkOutline,
+      personOutline,
+      alertCircleOutline,
+      personCircleOutline,
+      lockClosedOutline
+    });
+  }
 
   ionViewWillEnter(): void {
     // Al volver al login por cierre de sesión o redirección, se resetea todo estado previo

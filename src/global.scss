@@ -15,9 +15,12 @@
 @import "@ionic/angular/css/flex-utils.css";
 
 /* Estilos Globales y Tipografía Moderna */
-* {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+*, *::before, *::after {
   box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {

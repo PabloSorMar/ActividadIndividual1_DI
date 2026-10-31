@@ -312,10 +312,20 @@ export class SupabaseService {
         }
 
         if (!error && data) {
+          // Obtener listado de archivos del bucket 'galeria' para resolución dinámica de fotos
+          try {
+            const { data: files } = await this.supabase.storage.from(this.BUCKET_GALLERY).list();
+            if (files && files.length > 0) {
+              this.cachedGalleryFiles = files.map(f => f.name);
+            }
+          } catch {
+            this.cachedGalleryFiles = [];
+          }
+
           // Mapeo según el esquema real de Supabase (nombre, descripcion, precio, stock)
           const mapped: Product[] = data.map((item: any) => {
             const prodId = item.id;
-            const storageImg = this.getProductImageUrlFromBucket(prodId);
+            const explicitImg = item.image_url || item.imageUrl || item.imagen;
             return {
               id: prodId,
               name: item.nombre || item.name || 'Producto sin nombre',
@@ -323,7 +333,7 @@ export class SupabaseService {
               stock: Number(item.stock ?? 0),
               category: item.categoria || item.category || 'General',
               description: item.descripcion || item.description || '',
-              imageUrl: item.image_url || item.imageUrl || item.imagen || storageImg,
+              imageUrl: explicitImg || this.resolveProductImageUrl(prodId, item.nombre || item.name),
               created_at: item.created_at || new Date().toISOString()
             };
           });
@@ -555,30 +565,86 @@ export class SupabaseService {
 
   public readonly BUCKET_PROFILES = 'perfiles';
   public readonly BUCKET_GALLERY = 'galeria';
+  private cachedGalleryFiles: string[] = [];
+
+  /**
+   * Resuelve de forma inteligente la URL de una imagen en el bucket 'galeria' de Supabase
+   * Soportando múltiples extensiones (.png, .jpg, .jpeg, .webp) y coincidencia por ID o nombre.
+   */
+  public resolveProductImageUrl(productId?: string, productName?: string): string {
+    if (!productId && !productName) return '';
+
+    // 1. Revisar caché local en localStorage (creada al subir desde la app)
+    if (productId) {
+      const cached = localStorage.getItem('cliegestion_product_img_' + productId) ||
+                     localStorage.getItem('novagestion_product_img_' + productId);
+      if (cached && (cached.startsWith('http') || cached.startsWith('data:'))) {
+        return cached;
+      }
+    }
+
+    if (!this.isConfigured() || !environment.supabaseUrl) return '';
+
+    // 2. Si tenemos el listado real de archivos en el bucket 'galeria', emparejar inteligentemente
+    if (this.cachedGalleryFiles.length > 0) {
+      // a) Coincidencia por ID del producto (cualquier extensión)
+      if (productId) {
+        const matchById = this.cachedGalleryFiles.find(fn => {
+          const nameWithoutExt = fn.substring(0, fn.lastIndexOf('.')) || fn;
+          return nameWithoutExt.toLowerCase() === productId.toLowerCase();
+        });
+        if (matchById) {
+          return `${environment.supabaseUrl}/storage/v1/object/public/${this.BUCKET_GALLERY}/${matchById}`;
+        }
+      }
+
+      // b) Coincidencia por slug del nombre (ej: servidor-rack-dell-r740.jpg)
+      if (productName) {
+        const slug = productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const matchBySlug = this.cachedGalleryFiles.find(fn => fn.toLowerCase().includes(slug));
+        if (matchBySlug) {
+          return `${environment.supabaseUrl}/storage/v1/object/public/${this.BUCKET_GALLERY}/${matchBySlug}`;
+        }
+
+        // c) Coincidencia por palabras clave representativas (ej: 'dell', 'fortigate', 'cisco', 'ubiquiti', 'apc')
+        const keywords = productName.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+        const matchByKeyword = this.cachedGalleryFiles.find(fn => {
+          const cleanFn = fn.toLowerCase();
+          return keywords.some(k => cleanFn.includes(k));
+        });
+        if (matchByKeyword) {
+          return `${environment.supabaseUrl}/storage/v1/object/public/${this.BUCKET_GALLERY}/${matchByKeyword}`;
+        }
+      }
+    }
+
+    // 3. Intento directo por ID con extensión png
+    return `${environment.supabaseUrl}/storage/v1/object/public/${this.BUCKET_GALLERY}/${productId || 'default'}.png`;
+  }
 
   /**
    * Obtiene la URL pública de una imagen de producto alojada en el bucket 'galeria'
    */
   public getProductImageUrlFromBucket(productIdOrName?: string): string {
     if (!productIdOrName) return '';
-    if (this.isConfigured() && environment.supabaseUrl) {
-      return `${environment.supabaseUrl}/storage/v1/object/public/${this.BUCKET_GALLERY}/${productIdOrName}.png`;
-    }
-    return '';
+    return this.resolveProductImageUrl(productIdOrName);
   }
 
   /**
    * Resuelve la URL de imagen del producto (prioridad: URL directa, localStorage o bucket galeria de Supabase)
    */
   public getProductImageUrl(product: Product): string {
+    if (product.id) {
+      const cached = localStorage.getItem('cliegestion_product_img_' + product.id) ||
+                     localStorage.getItem('novagestion_product_img_' + product.id);
+      if (cached && (cached.startsWith('http') || cached.startsWith('data:'))) {
+        return cached;
+      }
+    }
     if (product.imageUrl && (product.imageUrl.startsWith('http') || product.imageUrl.startsWith('data:'))) {
       return product.imageUrl;
     }
-    if (product.id) {
-      const cached = localStorage.getItem('cliegestion_product_img_' + product.id) || localStorage.getItem('novagestion_product_img_' + product.id);
-      if (cached) return cached;
-    }
-    return this.getProductImageUrlFromBucket(product.id || encodeURIComponent(product.name.toLowerCase().replace(/\s+/g, '-')));
+    return this.resolveProductImageUrl(product.id, product.name);
   }
 
   /**
@@ -681,8 +747,17 @@ export class SupabaseService {
         .getPublicUrl(fileName);
 
       const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+      if (!this.cachedGalleryFiles.includes(fileName)) {
+        this.cachedGalleryFiles.push(fileName);
+      }
       localStorage.setItem('cliegestion_product_img_' + productId, publicUrl);
       localStorage.setItem('novagestion_product_img_' + productId, publicUrl);
+
+      // Intentar persistir en la columna image_url si existe en la tabla products
+      try {
+        await this.supabase.from('products').update({ image_url: publicUrl }).eq('id', productId);
+      } catch {}
+
       return { success: true, url: publicUrl };
     } catch (err: any) {
       console.warn('Excepción subiendo imagen a bucket galeria:', err);

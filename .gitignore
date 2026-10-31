@@ -20,7 +20,8 @@ log.txt
 # Ionic
 /.ionic
 /www
-/docs
+/docs/*
+!/docs/screenshots/
 /platforms
 /plugins
 

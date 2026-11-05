@@ -235,3 +235,137 @@ Este banco de preguntas recoge las dudas típicas que puede plantear un evaluado
   * **Navegación por teclado:** Orden lógico de tabulación (`tabindex`) con indicador de foco azul de alta visibilidad (`:focus-visible`).
   * **Semántica WAI-ARIA:** Uso de `role="alert"`, `aria-live="assertive"` para mensajes de error dinámicos, `aria-label` en botones con solo icono y `aria-required` en campos obligatorios para compatibilidad total con lectores de pantalla.
 
+---
+
+## 8. MAPA DE ELEMENTOS TÉCNICOS: DÓNDE Y CÓMO SE HA USADO CADA COSA
+
+Este apartado resume exactamente en qué archivos, clases y métodos del proyecto se implementa cada uno de los conceptos solicitados:
+
+---
+
+### 🌐 1. APIs (Interfaces de Programación de Aplicaciones)
+
+| Tipo de API | Dónde se utiliza (Archivos y Métodos) | ¿Para qué se usa? |
+| :--- | :--- | :--- |
+| **API REST de Supabase (PostgREST)** | `src/app/core/services/supabase.service.ts`<br>• `getProducts()`: `.from('products').select('*')`<br>• `addProduct()`: `.from('products').insert(...)`<br>• `deleteProduct()`: `.from('products').delete().eq('id', id)`<br>• `getClients()` / `addClient()`: `.from('clients')` | Operaciones CRUD sobre tablas relacionales PostgreSQL en la nube para gestionar el catálogo y clientes. |
+| **API de Supabase Storage** | `src/app/core/services/supabase.service.ts`<br>• `uploadProfilePhoto()`: `.storage.from('perfiles').upload(...)`<br>• `resolveProductImageUrl()`: `.storage.from('galeria').getPublicUrl(...)` | Subida multipart de fotos de perfil y resolución de URLs públicas de imágenes de catálogo. |
+| **API de Supabase Auth (GoTrue)** | `src/app/core/services/supabase.service.ts`<br>• `loginWithSupabase()`: `auth.signInWithPassword(...)`<br>• `registerWithSupabase()`: `auth.signUp(...)`<br>• `signOut()`: `auth.signOut()` | Autenticación basada en tokens JWT con verificación de credenciales en la nube. |
+| **HTML5 2D Canvas API (vía Chart.js)** | `src/app/pages/admin-dashboard/admin-dashboard.page.ts`<br>• `initProductStockChart()`: `new Chart(ctxProduct, { ... })`<br>• `initTicketPriorityChart()`: `new Chart(ctxTicket, { ... })` | Dibujo y renderizado interactivo de gráficos analíticos de barras y dona sobre elementos `<canvas>`. |
+| **API de jsPDF (Gráficos Vectoriales en PDF)** | `src/app/core/services/report-export.service.ts`<br>• `exportToPdf()`: `new jsPDF(...)`, `doc.rect()`, `doc.text()`, `doc.save()` | Construcción algorítmica de documentos PDF con coordenadas cartesianas milimétricas, membrete y tablas. |
+| **Web Storage API (`localStorage` / `sessionStorage`)** | • `app.component.ts`: Guardar tema oscuro/claro (`cliegestion_theme`)<br>• `auth.service.ts`: Persistir sesión activa y usuarios registrados<br>• `supabase.service.ts`: Guardar clave anon y caché de avatares | Persistencia en el navegador del cliente entre recargas de página sin necesidad de cookies. |
+| **Ionic Web Components API** | En todas las páginas y componentes:<br>`ion-split-pane`, `ion-menu`, `ion-modal`, `ion-toast`, `ion-spinner`, `ion-grid`, etc. | Componentes visuales desacoplados que encapsulan la UI nativa multiplataforma mediante Shadow DOM. |
+
+---
+
+### 🛡️ 2. GUARDS (Protección y Control de Rutas)
+
+* **Archivo del Guard:** `src/app/core/guards/auth.guard.ts`
+* **Implementación:** Guard funcional basado en `CanActivateFn` con inyección funcional `inject(AuthService)` e `inject(Router)`.
+* **Dónde se aplica (Rutas en `src/app/app.routes.ts`):**
+  1. `/admin-dashboard` $\rightarrow$ `canActivate: [authGuard]`, `data: { role: 'admin' }`
+  2. `/management` $\rightarrow$ `canActivate: [authGuard]`, `data: { role: 'admin' }`
+  3. `/user-dashboard` $\rightarrow$ `canActivate: [authGuard]`, `data: { role: 'user' }`
+  4. `/about` $\rightarrow$ `canActivate: [authGuard]`
+  5. `/contact` $\rightarrow$ `canActivate: [authGuard]`
+* **Lógica ejecutada:**
+  * Si `!authService.isAuthenticated()` $\rightarrow$ bloquea y redirige forzosamente a `/login?returnUrl=...`.
+  * Si la ruta exige rol `admin` y el usuario tiene rol `user` $\rightarrow$ desvía la navegación a `/unauthorized`.
+  * Si el usuario es `admin` $\rightarrow$ tiene acceso global concedido.
+
+---
+
+### 👤 3. AUTHSERVICE (Servicio Central de Autenticación)
+
+* **Archivo de definición:** `src/app/core/services/auth.service.ts`
+* **Patrón interno:** Gestión de estado reactivo mediante `BehaviorSubject<AuthState>` privado y observables públicos (`currentUser$`, `isAuthenticated$`, `userRole$`).
+* **Dónde se inyecta y utiliza en el proyecto:**
+  1. `src/app/core/guards/auth.guard.ts`: Para consultar `isAuthenticated()` y `getUserRole()` antes de autorizar cualquier salto de ruta.
+  2. `src/app/app.component.ts` y `.html`:
+     * `[when]="authService.isAuthenticated() ? 'lg' : 'false'"`: Activa o desactiva el menú lateral según haya sesión.
+     * `*ngIf="authService.currentUser$ | async as user"`: Pinta el nombre, email, badge y avatar en la cabecera del menú.
+     * `*ngIf="authService.hasRole('admin')"`: Renderiza los enlaces de administración solo si el usuario es admin.
+     * `authService.logout()`: Cierra la sesión activa.
+  3. `src/app/pages/login/login.page.ts`: Ejecuta `this.authService.login(...)` al pulsar "Acceder" o en los botones rápidos de 1 clic.
+  4. `src/app/pages/admin-dashboard/admin-dashboard.page.ts`: Verifica permisos administrativos y provee cierre de sesión.
+  5. `src/app/pages/user-dashboard/user-dashboard.page.ts`: Filtra los tickets para mostrar únicamente los que pertenecen al ID del usuario autenticado (`authService.getCurrentUser()?.id`).
+
+---
+
+### ⚡ 4. SUPABASE (Base de Datos, Autenticación y Storage)
+
+* **Archivo central:** `src/app/core/services/supabase.service.ts`
+* **Instanciación:** `createClient(environment.supabaseUrl, environment.supabaseKey)` usando las credenciales del proyecto `spfawsmajwnrtzmqiyvy.supabase.co`.
+* **Dónde y qué partes se utilizan:**
+  1. **Tablas Relacionales (SQL / PostgreSQL):**
+     * Tabla `products` / `productos`: En `admin-dashboard` para consultar catálogo maestro, añadir nuevos productos con stock y precio, y borrarlos. En `user-dashboard` para el catálogo visual.
+     * Tabla `clients`: En `admin-dashboard` para listar y registrar clientes corporativos.
+  2. **Bucket de Almacenamiento `perfiles` (Supabase Storage):**
+     * En `src/app/pages/user-dashboard/user-dashboard.page.ts` mediante el método `uploadProfilePhoto()`: El usuario selecciona una imagen de su ordenador y el servicio la sube al bucket `perfiles`, genera la URL pública con `getPublicUrl` y actualiza los metadatos de usuario en Supabase Auth.
+  3. **Bucket de Almacenamiento `galeria` (Supabase Storage):**
+     * En `user-dashboard` y `admin-dashboard` mediante el método `resolveProductImageUrl()`: Empareja cada producto de la base de datos con los archivos subidos al bucket `galeria` mediante coincidencia por ID, slug y palabras clave.
+  4. **Autenticación en la Nube:**
+     * En `login.page.ts`: Comprueba credenciales contra Supabase Auth con `loginWithSupabase()`.
+     * En `login.page.html`: Si la clave no estuviera introducida, muestra el asistente `saveKey()` para pegarla en caliente.
+
+---
+
+### 📶 5. SIGNALS (Reactividad Nativa de Angular)
+
+* **Dónde se utilizan:** `src/app/core/services/supabase.service.ts`
+* **Código exacto:**
+  ```typescript
+  import { Injectable, signal } from '@angular/core';
+
+  // Signals reactivos para el estado de autenticación en Supabase
+  public currentUser = signal<User | null>(null);
+  public userRole = signal<'admin' | 'user' | null>(null);
+  ```
+* **Operaciones realizadas con Signals:**
+  * Al iniciar sesión con éxito: `this.currentUser.set(mappedUser); this.userRole.set(res.role);`
+  * Al cerrar sesión (`signOut`): `this.currentUser.set(null); this.userRole.set(null);`
+* **¿Por qué aquí?** Los Signals ofrecen una lectura síncrona limpia y reactiva dentro del servicio sin requerir tuberías de observables para operaciones de consulta directa de valores.
+
+---
+
+### ⏱️ 6. SINCRONÍA (Operaciones Síncronas en el Proyecto)
+
+Son aquellas operaciones que se ejecutan de manera inmediata en el hilo principal sin esperar eventos de red ni promesas:
+
+| Funcionalidad Síncrona | Dónde se ejecuta | Código / Mecanismo |
+| :--- | :--- | :--- |
+| **Validaciones de formulario reactivo** | `login.page.ts`, `register.page.ts`, `custom-validators.ts` | `Validators.required`, `Validators.minLength(3)`, comprobación matemática de la letra del DNI con operador módulo `dni % 23`. |
+| **Filtrado dinámico de tickets en memoria** | `user-dashboard.page.ts` (`filteredTickets`), `admin-dashboard.page.ts` | Getters síncronos sobre arrays con `.filter(t => t.status === filter && t.priority === filter)`. |
+| **Búsqueda en vivo y ordenación de tablas** | `src/app/shared/components/data-table/data-table.component.ts` | Algoritmos síncronos de ordenación `.sort()` sobre las columnas y cálculo de páginas con `.slice(inicio, fin)`. |
+| **Pre-registro de iconos en memoria** | En los constructores de `login.page.ts`, `app.component.ts` | `addIcons({ businessOutline, shieldCheckmark, ... })`. Empaqueta inmediatamente las referencias en memoria. |
+| **Cambio de tema visual (Dark/Light)** | `app.component.ts` (`toggleTheme()`, `initTheme()`) | Lectura y escritura síncrona en `localStorage.getItem('cliegestion_theme')` y manipulación del DOM con `classList.add('dark')`. |
+
+---
+
+### ⏳ 7. ASINCRONÍA (Operaciones Asíncronas en el Proyecto)
+
+Son las tareas no bloqueantes que dependen de respuestas de red, bases de datos o temporizadores:
+
+| Funcionalidad Asíncrona | Dónde se ejecuta | Tecnología / Operador Asíncrono |
+| :--- | :--- | :--- |
+| **Flujos reactivos de sesión y tickets** | `auth.service.ts`, `ticket.service.ts` | **RxJS Observables:** `BehaviorSubject`, `Observable.pipe()`, `map()`, suscripciones con `.subscribe()` y desuscripción en `ngOnDestroy`. |
+| **Orquestación concurrente de fuentes duales** | `src/app/pages/admin-dashboard/admin-dashboard.page.ts` | **RxJS `forkJoin`:** Dispara concurrentemente la llamada SQL y el stream NoSQL consolidando los datos en un solo callback. |
+| **Llamadas CRUD y Storage a Supabase** | `src/app/core/services/supabase.service.ts` | **Promesas con `async / await`:** `await this.supabase.from('products').select('*')`, `await this.supabase.storage.upload(...)`. |
+| **Validaciones asíncronas de formularios** | `src/app/core/validators/custom-validators.ts`, `register.page.ts` | `AsyncValidatorFn` con `debounceTime(400)` para pausar la comprobación hasta que el usuario deja de escribir. |
+| **Carga perezosa de rutas (*Lazy Loading*)** | `src/app/app.routes.ts` | Funciones dinámicas asíncronas `loadComponent: () => import('./pages/...').then(m => m.Page)`. |
+| **Lectura local de archivos fotográficos** | `src/app/core/services/supabase.service.ts` (`fileToBase64`) | `new Promise` con evento asíncrono `FileReader.onload`. |
+| **Re-entrada al ciclo de detección de Angular** | `login.page.ts` | `this.ngZone.run(() => { ... })` para sincronizar las respuestas de red asíncronas de Supabase con la vista. |
+
+---
+
+### 🎨 8. ESTILOS (Arquitectura de Diseño y Maquetación)
+
+| Nivel de Estilo | Archivo / Ubicación | Propósito y Técnicas Aplicadas |
+| :--- | :--- | :--- |
+| **Tokens de Diseño Globales** | `src/theme/variables.scss` | Variables CSS personalizadas (`--ion-color-primary: #2563eb`, `--ion-color-success: #059669`, etc.). Calibradas con ratios de contraste WCAG 2.1 AA/AAA ($\ge 4.5:1$). |
+| **Tipografía y Normalización** | `src/global.scss` | Aplicación de la tipografía moderna *Plus Jakarta Sans* a nivel de `html, body`, eliminación de márgenes, y reseteo universal `box-sizing: border-box`. |
+| **Accesibilidad de Teclado** | `src/global.scss` | Regla pseudo-clase `:focus-visible` con contorno azul visible de 3px (`3px solid var(--ion-color-primary)`) para usuarios que navegan con la tecla Tabulador. |
+| **Estilos Encapsulados (Scoped SCSS)** | En cada página y componente:<br>• `login.page.scss`<br>• `admin-dashboard.page.scss`<br>• `stat-card.component.scss`<br>• `data-table.component.scss` | Estilos aislados por componente mediante el emulador de Shadow DOM de Angular. Uso de flexbox, backdrop blur (`backdrop-filter: blur(16px)` en tarjetas de login) y rejillas `ion-grid`. |
+| **Modo Oscuro / Modo Claro** | `src/global.scss`, `src/theme/variables.scss` y `src/index.html` | Activado mediante las clases `.ion-palette-dark` y `.dark` en el `<body>`, adaptando automáticamente fondos oscuros (`#0b0f19`) y textos de alto contraste (`#f8fafc`). |
+| **Diseño Adaptativo (*Responsive*)** | `app.component.scss`, `admin-dashboard.page.scss` | Reglas `@media (min-width: 768px)` y `@media (min-width: 992px)` junto con `ion-split-pane` para reorganizar tarjetas y paneles entre móvil, tablet y monitor de escritorio. |
+
+
